@@ -1150,9 +1150,9 @@
 
                 switch (action) {
                     case 'goto_demo':
-                        showDemoButton(demo.asset || pickDefaultAsset());
-                        break;
                     case 'postdemo':
+                    case 'next_step':
+                        // Show CTA only when GPT asks to proceed
                         showDemoButton(demo.asset || pickDefaultAsset());
                         break;
                     case 'goto_form':
@@ -1218,8 +1218,7 @@
                     console.log('PHP and API key ready');
                 }
             });
-            // Append CTA at the bottom (as required at the end)
-            try { window.LeadCtx?.maybeAppendOfferCTA(); } catch(_) {}
+            // Do not append CTA automatically; it will be shown only when GPT requests it
         });
     </script>
 </body>
