@@ -800,6 +800,25 @@
         };
 
         let selectedLanguage = 'uk'; // Default language
+        // CTA label localization per chat language
+        const ctaLabels = {
+            en: 'Start Earning',
+            uk: 'Почати заробляти',
+            ru: 'Начать зарабатывать',
+            es: 'Empezar a ganar',
+            fr: 'Commencer à gagner',
+            de: 'Jetzt verdienen',
+            pt: 'Começar a ganhar',
+            it: 'Inizia a guadagnare',
+            zh: '开始赚钱',
+            ja: '稼ぎ始める'
+        };
+
+        function getChatLang() {
+            // For now, chat language follows selectedLanguage (set by user in onboarding)
+            // If later needed, can be enhanced to detect language from assistant replies
+            return selectedLanguage || 'en';
+        }
 
         // Navigation functions
         function showPage(pageId) {
@@ -983,8 +1002,9 @@
 
             const button = document.createElement('button');
             button.className = 'demo-button';
-            // Required CTA text
-            button.textContent = 'Почати заробляти';
+            // Language-aware CTA text
+            const lang = getChatLang();
+            button.textContent = ctaLabels[lang] || ctaLabels.en;
             button.style.cssText = `
                 background: var(--accent);
                 color: var(--white);
@@ -1090,10 +1110,11 @@
 
             try {
                 const keitaro = getAllParams();
+                const lang = getChatLang();
                 const response = await fetch(phpConfig.path, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...context, keitaro }),
+                    body: JSON.stringify({ ...context, keitaro, lang }),
                     signal: AbortSignal.timeout(35000)
                 });
 

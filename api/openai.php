@@ -32,6 +32,7 @@ if (!$input || !isset($input['messages']) || !is_array($input['messages'])) {
 $messages = $input['messages'];
 $model    = $input['model'] ?? 'gpt-4o-mini';
 $keitaro  = $input['keitaro'] ?? [];
+$lang     = $input['lang'] ?? null;
 
 // Серверні сигнали
 $ip        = $_SERVER['REMOTE_ADDR'] ?? null;
@@ -58,7 +59,7 @@ $sysText = "You are an AI investment consultation assistant: persuasive, profess
 "- UA/IP/TZ/Referrer: {$k['ua']} | {$k['ip']} | {$k['tz']} | {$k['referrer']}\n\n" .
 
 "## Tone & Rules\n" .
-"- Use only 1 language for all prompts and replies.\n" .
+"- Use only 1 language for all prompts and replies." . ($lang ? " Use this language: {$lang}." : "") . "\n" .
 "- Replies MUST be 1–2 simple and confident sentences, direct and action-oriented.\n" .
 "- You may highlight potential financial opportunities to demonstrate value.\n" .
 "- Use all available context to infer user interest and avoid irrelevant questions.\n" .
