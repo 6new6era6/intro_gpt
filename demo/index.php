@@ -1466,6 +1466,9 @@ background-color: #212936;
   .btn-secondary { background-color: var(--secondary) !important; color: var(--white) !important; }
   .btn-neutral { background-color: var(--gray-600) !important; color: var(--white) !important; }
 
+  /* Header balance value must be readable on light background */
+  header p.text-white { color: var(--black) !important; }
+
   /* Replace neon button look with intro accent button */
   .neon-button { background: var(--accent) !important; color: #fff !important; box-shadow: 0 4px 10px rgba(0,0,0,0.08) !important; border-radius: 12px !important; }
   .neon-button:hover { background: var(--accent-dark) !important; box-shadow: 0 8px 16px rgba(0,0,0,0.12) !important; transform: translateY(-1px) !important; }
@@ -1534,6 +1537,11 @@ background-color: #212936;
 
   /* Balance chip readability */
   .balance-chart { background-color: rgba(255,255,255,0.92) !important; color: var(--black) !important; border-color: var(--card-border) !important; }
+  .balance-chart .text-sm, .balance-chart .text-lg, .balance-chart span { color: var(--black) !important; }
+
+  /* DEMO badge and avatar letter */
+  header p[style*="color: red"] { color: #D0021B !important; font-weight: 600; }
+  header .h-10.w-10.rounded-full { background-color: var(--accent) !important; color: #fff !important; }
 
   /* Chat widget */
   #chatBox .bg-\[\#21293bcc\] { background: #ffffffcc !important; }
