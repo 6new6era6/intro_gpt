@@ -1184,10 +1184,12 @@ background-color: #212936;
   }
 }
 .iti__country.iti__highlight {
-background-color: #212936;
+  background-color: #e5f2ff; /* light highlight */
 }
 .iti__country-list {
-	border:  none;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  background-color: #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 
 </style>
@@ -1365,18 +1367,18 @@ background-color: #212936;
             border-bottom: none;
         }
         
-        /* Estilos para links que abrem os popups */
-        .legal-popup-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            transition: color 0.2s;
-            cursor: pointer;
-        }
+    /* Estilos para links dentro do popup (não afetam links fora) */
+    .legal-popup .legal-popup-link {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.2s;
+      cursor: pointer;
+    }
         
-        .legal-popup-link:hover {
-            color: #fff;
-            text-decoration: underline;
-        }
+    .legal-popup .legal-popup-link:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
         
         /* Desativar scroll do body quando popup está aberto */
         body.popup-open {
@@ -1762,7 +1764,7 @@ background-color: #212936;
                 <!-- Trading Strategy -->
                 <div class="mb-6" data-intro="Wähle deine Trading-Strategie. Diese beeinflusst, wie der Bot deine Gelder verwaltet." data-step="5">
                     <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="settings.strategy_label">Trading-Strategie</label>
-                    <select id="strategySelect" class="w-full bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-white">
+                    <select id="strategySelect" class="w-full bg-white border border-gray-300 rounded-md py-2 px-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                       <option value="conservative" data-min="250" data-max="1000" data-i18n="settings.strategy_conservative">Konservativ</option>
                       <option value="balanced" data-min="1000" data-max="5000" data-i18n="settings.strategy_balanced">Ausgewogen</option>
                       <option value="aggressive" data-min="5000" data-max="50000" data-i18n="settings.strategy_aggressive">Aggressiv</option>
@@ -1910,15 +1912,15 @@ background-color: #212936;
                 </svg>
               </button>
             </div>
-            <p class="text-gray-400 mb-4" data-i18n="modals.deposit_hint">Wähl dä Betrag us, wo du uf din Trading-Account einzahle wotsch.</p>
+            <p class="text-gray-600 mb-4" data-i18n="modals.deposit_hint">Wähl dä Betrag us, wo du uf din Trading-Account einzahle wotsch.</p>
           
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="modals.deposit_amount">Einzahlbetrag (250 - $ 50’000)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modals.deposit_amount">Einzahlbetrag (250 - $ 50’000)</label>
               <div class="flex items-center space-x-4">
                 <input type="range" id="depositSlider" min="250" max="50000" step="250" value="250" class="flex-1">
                 <div class="relative">
                   <span class="absolute text-gray-500 left-3 top-2">$</span>
-                  <input type="number" id="depositInput" value="250" min="250" max="50000" class="bg-slate-800 border border-slate-700 rounded-md py-1 pl-8 pr-3 text-white w-32">
+                  <input type="number" id="depositInput" value="250" min="250" max="50000" class="bg-white border border-gray-300 rounded-md py-1 pl-8 pr-3 text-gray-900 w-32 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
               </div>
             </div>
@@ -1947,14 +1949,14 @@ background-color: #212936;
       </div>
   
       <!-- Форма -->
-      <form action="thanks/index.php" method="POST" id="registrationForm3" class="p-4 space-y-4 text-sm">
-  <input name="f_name" type="text" placeholder="Vorname" data-i18n-attr="placeholder" data-i18n-placeholder="chat.first_name" class="text-base w-full bg-[#1b2232] border border-[#2e374d] text-white placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-[#71e1fc] focus:outline-none" required="">
+    <form action="thanks/index.php" method="POST" id="registrationForm3" class="p-4 space-y-4 text-sm">
+  <input name="f_name" type="text" placeholder="Vorname" data-i18n-attr="placeholder" data-i18n-placeholder="chat.first_name" class="text-base w-full bg-white border border-gray-300 text-gray-900 placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none" required="">
       
-  <input name="l_name" type="text" placeholder="Nachname" data-i18n-attr="placeholder" data-i18n-placeholder="chat.last_name" class="text-base w-full bg-[#1b2232] border border-[#2e374d] text-white placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-[#71e1fc] focus:outline-none" required="">
+  <input name="l_name" type="text" placeholder="Nachname" data-i18n-attr="placeholder" data-i18n-placeholder="chat.last_name" class="text-base w-full bg-white border border-gray-300 text-gray-900 placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none" required="">
       
-  <input name="email" type="email" placeholder="E-Mail-Adresse" data-i18n-attr="placeholder" data-i18n-placeholder="chat.email" class="text-base w-full bg-[#1b2232] border border-[#2e374d] text-white placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-[#71e1fc] focus:outline-none" required="">
+  <input name="email" type="email" placeholder="E-Mail-Adresse" data-i18n-attr="placeholder" data-i18n-placeholder="chat.email" class="text-base w-full bg-white border border-gray-300 text-gray-900 placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none" required="">
       
-  <input type="tel" placeholder="" name="phone" data-i18n-attr="placeholder" data-i18n-placeholder="chat.phone" class="text-base w-full bg-[#1b2232] border border-[#2e374d] text-white placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-[#71e1fc] focus:outline-none" required="">
+  <input type="tel" placeholder="" name="phone" data-i18n-attr="placeholder" data-i18n-placeholder="chat.phone" class="text-base w-full bg-white border border-gray-300 text-gray-900 placeholder-gray-400 px-3 py-2 rounded-[0.75rem] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none" required="">
       
         <input type="hidden" name="phone2" class="phone2" autocomplete="on" required="">
 <input type="hidden" name="pixel_id" value="n">
@@ -2014,19 +2016,19 @@ background-color: #212936;
               </svg>
             </button>
           </div>
-          <p class="text-gray-400 mb-4" data-i18n="modals.withdraw_hint">Wähl dä Betrag und d'Methode zum Abhebe vo dim Trading-Konto us.</p>
+          <p class="text-gray-600 mb-4" data-i18n="modals.withdraw_hint">Wähl dä Betrag und d'Methode zum Abhebe vo dim Trading-Konto us.</p>
       
           <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="modals.withdraw_amount">Abhebebetrag</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modals.withdraw_amount">Abhebebetrag</label>
             <div class="relative">
               <span class="absolute text-gray-500 left-3 top-2">$</span>
-              <input type="number" id="withdrawInput" value="100" min="50" class="bg-slate-800 border border-slate-700 rounded-md py-1 pl-8 pr-3 text-white w-full">
+              <input type="number" id="withdrawInput" value="100" min="50" class="bg-white border border-gray-300 rounded-md py-1 pl-8 pr-3 text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
-            <p class="text-sm text-gray-400 mt-1"><span data-i18n="modals.withdraw_available">Verfügbar:</span> $<span id="availableBalance">0.00</span></p>
+            <p class="text-sm text-gray-600 mt-1"><span data-i18n="modals.withdraw_available">Verfügbar:</span> $<span id="availableBalance">0.00</span></p>
           </div>
       
           <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="modals.withdraw_method">Abhebemethode</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modals.withdraw_method">Abhebemethode</label>
             <div class="grid grid-cols-2 gap-3">
               <div class="withdraw-method selected p-3 rounded-md bg-slate-800" data-method="paypal">
                 <div class="flex items-center">
@@ -2049,15 +2051,15 @@ background-color: #212936;
           </div>
       
           <div id="paypalDetails" class="mb-6">
-            <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="modals.paypal_email">PayPal E-Mail</label>
-            <input type="email" placeholder="diini@email.ch" class="bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-white w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modals.paypal_email">PayPal E-Mail</label>
+            <input type="email" placeholder="diini@email.ch" class="bg-white border border-gray-300 rounded-md py-2 px-3 text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           </div>
       
           <div id="ibanDetails" class="mb-6 hidden">
-            <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="modals.iban_number">IBAN Nummer</label>
-            <input type="text" placeholder="IBAN..." data-i18n-attr="placeholder" data-i18n-placeholder="modals.iban_placeholder" class="bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-white w-full">
-            <label class="block text-sm font-medium text-gray-400 mt-4 mb-2" data-i18n="modals.bank_name">Bankname</label>
-            <input type="text" placeholder="Name vo dr Bank..." data-i18n-attr="placeholder" data-i18n-placeholder="modals.bank_placeholder" class="bg-slate-800 border border-slate-700 rounded-md py-2 px-3 text-white w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modals.iban_number">IBAN Nummer</label>
+            <input type="text" placeholder="IBAN..." data-i18n-attr="placeholder" data-i18n-placeholder="modals.iban_placeholder" class="bg-white border border-gray-300 rounded-md py-2 px-3 text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label class="block text-sm font-medium text-gray-700 mt-4 mb-2" data-i18n="modals.bank_name">Bankname</label>
+            <input type="text" placeholder="Name vo dr Bank..." data-i18n-attr="placeholder" data-i18n-placeholder="modals.bank_placeholder" class="bg-white border border-gray-300 rounded-md py-2 px-3 text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           </div>
       
           <button id="confirmWithdrawBtn" class="w-full py-3 rounded-md btn-primary font-medium" data-i18n="modals.withdraw_confirm">
@@ -3249,7 +3251,7 @@ balance = initialBalance + totalProfit;
         });
     </script>
     <!-- Countdown Timer -->
-  <div id="countdownTimer" class="fixed top-4 left-4 bg-slate-800 text-white text-sm px-4 py-2 rounded-md shadow-lg z-50 hidden">
+  <div id="countdownTimer" class="fixed top-4 left-4 bg-white/90 text-slate-800 text-sm px-4 py-2 rounded-md shadow border border-slate-200 z-50 hidden">
     ⏳ <span data-i18n="countdown.remaining">Verbleibende Zeit:</span> <span id="countdownDisplay">02:00</span>
   </div>
 
@@ -3261,8 +3263,8 @@ balance = initialBalance + totalProfit;
 
    
 
-    <!-- Форма -->
-<div class="max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700">
+  <!-- Форма -->
+<div class="max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white p-8 rounded-2xl shadow-xl border border-gray-200">
 
          <!-- Блок с анимацией и текстом -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center mb-16">
@@ -3270,8 +3272,8 @@ balance = initialBalance + totalProfit;
 
       <!-- Текст -->
       <div class="text-center md:text-left" data-aos="fade-left">
-        <h2 class="text-4xl font-bold mb-4" data-i18n-html="forms.ready_title">Bereit zum <span class="text-gradient">Starten?</span></h2>
-        <p class="text-xl text-gray-300 max-w-3xl mx-auto" data-i18n="forms.ready_desc">
+        <h2 class="text-4xl font-bold mb-4 text-gray-900" data-i18n-html="forms.ready_title">Bereit zum <span class="text-gradient">Starten?</span></h2>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto" data-i18n="forms.ready_desc">
           Füllen Sie das folgende Formular aus und beginnen Sie noch heute, Ihr finanzielles Leben zu verändern.
         </p>
       </div>
@@ -3280,20 +3282,20 @@ balance = initialBalance + totalProfit;
   
       <form action="thanks/index.php" method="POST" id="registrationForm2" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <label for="nome2" class="block text-sm font-medium text-gray-300 mb-1" data-i18n="forms.first_name">Vorname</label>
-            <input type="text" name="f_name" placeholder="Juan" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required="">
+            <label for="nome2" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="forms.first_name">Vorname</label>
+            <input type="text" name="f_name" placeholder="Juan" class="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required="">
           </div>
           <div>
-            <label for="sobrenome2" class="block text-sm font-medium text-gray-300 mb-1" data-i18n="forms.last_name">Nachname</label>
-            <input type="text" name="l_name" placeholder="Pérez" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required="">
+            <label for="sobrenome2" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="forms.last_name">Nachname</label>
+            <input type="text" name="l_name" placeholder="Pérez" class="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required="">
           </div>
           <div>
-            <label for="email2" class="block text-sm font-medium text-gray-300 mb-1" data-i18n="forms.email">E-Mail-Adresse</label>
-            <input type="email" name="email" placeholder="juan.perez@email.com" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required="">
+            <label for="email2" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="forms.email">E-Mail-Adresse</label>
+            <input type="email" name="email" placeholder="juan.perez@email.com" class="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required="">
           </div>
           <div>
-            <label for="telefone2" class="block text-sm font-medium text-gray-300 mb-1" data-i18n="forms.phone">Telefon</label>
-            <input type="tel" name="phone" placeholder="" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required="">
+            <label for="telefone2" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="forms.phone">Telefon</label>
+            <input type="tel" name="phone" placeholder="" class="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required="">
             <input type="hidden" name="phone2" class="phone2" autocomplete="on" required="">
 <input type="hidden" name="pixel_id" value="n">
 <input type="hidden" name="page_lang" value="de">
@@ -3311,8 +3313,8 @@ balance = initialBalance + totalProfit;
                 Jetzt Starten
               </button>
         </div>
-        <p class="text-xs text-gray-400 text-center md:col-span-2 mt-4" data-i18n-html="forms.accept_html">
-            Mit der Registrierung akzeptieren Sie unsere <a href="#" data-popup="termos-uso-popup" class="legal-popup-link text-blue-400 hover:underline">Nutzungsbedingungen</a> und die <a href="#" data-popup="privacidade-popup" class="legal-popup-link text-blue-400 hover:underline">Datenschutzerklärung</a>.
+        <p class="text-xs text-gray-500 text-center md:col-span-2 mt-4" data-i18n-html="forms.accept_html">
+            Mit der Registrierung akzeptieren Sie unsere <a href="#" data-popup="termos-uso-popup" class="legal-popup-link text-blue-600 hover:underline">Nutzungsbedingungen</a> und die <a href="#" data-popup="privacidade-popup" class="legal-popup-link text-blue-600 hover:underline">Datenschutzerklärung</a>.
           </p>
       </form>
     </div>
