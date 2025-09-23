@@ -1453,7 +1453,7 @@ background-color: #212936;
   /* Lighten common dark utility classes from Tailwind used in markup */
   .bg-slate-900, .bg-slate-800, .bg-slate-700 { background-color: var(--white) !important; }
   .text-gray-300 { color: var(--gray-700) !important; }
-  .text-gray-400 { color: var(--gray-600) !important; }
+  .text-gray-400 { color: var(--gray-700) !important; }
 
   /* Cards and containers */
   .card { background-color: var(--card-bg) !important; border-color: var(--card-border) !important; }
@@ -1505,12 +1505,17 @@ background-color: #212936;
     border-left-width: 4px !important;
     border-radius: 10px !important;
     backdrop-filter: none !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
   }
 
   /* Accent colors for buy/sell in light theme */
   :root { --red: #FF3B30; }
-  .trade-card.buy { border-left-color: var(--secondary) !important; }
-  .trade-card.sell { border-left-color: var(--red) !important; }
+  .trade-card.buy { border-left-color: var(--secondary) !important; box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important; }
+  .trade-card.sell { border-left-color: var(--red) !important; box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important; }
+
+  /* Profit-based glow */
+  .trade-card.gain { box-shadow: 0 8px 22px rgba(52,199,89,0.22) !important; }
+  .trade-card.loss { box-shadow: 0 8px 22px rgba(255,59,48,0.22) !important; }
 
   /* Verified badge in light intro style */
   .verified-badge {
@@ -1521,6 +1526,14 @@ background-color: #212936;
     padding: 2px 8px !important;
     display: inline-flex; align-items: center; gap: 6px;
   }
+
+  /* Forms readability */
+  .modal-content label, .card label { color: var(--gray-800) !important; }
+  .modal-content .text-gray-400, .card .text-gray-400 { color: var(--gray-700) !important; }
+  input::placeholder, textarea::placeholder { color: var(--gray-400) !important; }
+
+  /* Balance chip readability */
+  .balance-chart { background-color: rgba(255,255,255,0.92) !important; color: var(--black) !important; border-color: var(--card-border) !important; }
 
   /* Chat widget */
   #chatBox .bg-\[\#21293bcc\] { background: #ffffffcc !important; }
@@ -2684,7 +2697,8 @@ balance = initialBalance + totalProfit;
             
             // Create trade card
             const card = document.createElement('div');
-            card.className = `trade-card ${trade.type.toLowerCase()}`;
+            const plClass = trade.profitLoss >= 0 ? 'gain' : 'loss';
+            card.className = `trade-card ${trade.type.toLowerCase()} ${plClass}`;
             
             // Add content - показываем полную сумму при продаже (сумма + прибыль)
       card.innerHTML = `
