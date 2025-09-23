@@ -61,6 +61,9 @@
     </script>
     <!-- End Facebook Pixel Code -->
 
+    <!-- Lead Context module -->
+    <script src="js/lead_ctx.js"></script>
+
     <style>
         :root {
             --white: #ffffff;
@@ -673,10 +676,7 @@
                 <div class="final-icon">🚀</div>
                 <h2 id="finalTitle">Let's Start Investing</h2>
                 <p id="finalDescription">Ready to grow your capital? Describe your financial goals and get a personalized plan</p>
-                <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-                    <button class="start-button" onclick="startChat()" id="startButton">Start Chat</button>
-                    <button class="start-button" id="demoLaunchButton" style="background:var(--gray-700);">Go to Demo</button>
-                </div>
+                <button class="start-button" onclick="startChat()" id="startButton">Start Chat</button>
             </div>
         </div>
     </div>
@@ -815,7 +815,6 @@
             document.getElementById('finalTitle').textContent = translations[lang].title;
             document.getElementById('finalDescription').textContent = translations[lang].description;
             document.getElementById('startButton').textContent = translations[lang].startButton;
-            document.getElementById('demoLaunchButton').textContent = translations[lang].demoButton;
 
             // Show final screen
             showPage('finalScreen');
@@ -828,6 +827,8 @@
 
             document.querySelector('.container').style.display = 'none';
             document.getElementById('chatContainer').classList.add('active');
+
+            try { window.LeadCtx?.addChatMessage('system', `chat_started|lang:${selectedLanguage}`); } catch(_) {}
         }
 
         // Auto-advance from welcome screen to language selection
@@ -842,6 +843,43 @@
 
         // Chat context for OpenAI
         const context = { messages: [], model: 'gpt-4o-mini' };
+
+        // Collect comprehensive Keitaro + UTM + click params
+        function getAllParams() {
+            const p = new URLSearchParams(location.search);
+            const obj = {
+                click_id: p.get('click_id') || p.get('external_id') || p.get('clickid') || '',
+                external_id: p.get('external_id') || '',
+                campaign_id: p.get('campaign_id') || p.get('campaign') || '',
+                adset_id: p.get('adset_id') || '',
+                ad_id: p.get('ad_id') || p.get('adid') || '',
+                utm_source: p.get('utm_source') || '',
+                utm_medium: p.get('utm_medium') || '',
+                utm_campaign: p.get('utm_campaign') || '',
+                utm_term: p.get('utm_term') || '',
+                utm_content: p.get('utm_content') || '',
+                utm_id: p.get('utm_id') || '',
+                fbclid: p.get('fbclid') || '',
+                gclid: p.get('gclid') || '',
+                yclid: p.get('yclid') || '',
+                ttclid: p.get('ttclid') || '',
+                msclkid: p.get('msclkid') || '',
+                aff_sub1: p.get('aff_sub1') || '',
+                aff_sub2: p.get('aff_sub2') || '',
+                aff_sub3: p.get('aff_sub3') || '',
+                aff_sub4: p.get('aff_sub4') || '',
+                aff_sub5: p.get('aff_sub5') || '',
+                country: p.get('country') || '',
+                region: p.get('region') || '',
+                city: p.get('city') || '',
+                ip: p.get('ip') || '',
+                referrer: document.referrer || '',
+                ua: navigator.userAgent || '',
+                tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+            };
+            try { window.LeadCtx?.update({ keitaro: obj }); } catch(_) {}
+            return obj;
+        }
 
         function typeMessage(text, el, speed = 30) {
             return new Promise(resolve => {
@@ -880,6 +918,8 @@
             }
 
             chatBox.scrollTop = chatBox.scrollHeight;
+
+            try { window.LeadCtx?.addChatMessage(isUser ? 'user' : 'assistant', String(content || '')); } catch(_) {}
             return messageDiv;
         }
 
@@ -912,6 +952,18 @@
                 const answers = { ...(stored.answers || {}), ...((updates && updates.answers) || {}) };
                 const merged = { ...stored, ...updates, answers };
                 sessionStorage.leadCtx = JSON.stringify(merged);
+                // Mirror into persistent leadCtx as well
+                try {
+                    if (updates?.answers) {
+                        Object.entries(updates.answers).forEach(([k,v]) => window.LeadCtx?.addAnswer(k,v));
+                    }
+                    if (updates?.readiness_score || updates?.lead_tier) {
+                        window.LeadCtx?.setScore({
+                            readiness_score: updates.readiness_score,
+                            lead_tier: updates.lead_tier,
+                        });
+                    }
+                } catch(_) {}
             } catch(_) {}
         }
 
@@ -931,7 +983,8 @@
 
             const button = document.createElement('button');
             button.className = 'demo-button';
-            button.textContent = translations[selectedLanguage]?.demoButton || 'Go to Demo';
+            // Required CTA text
+            button.textContent = 'Почати заробляти';
             button.style.cssText = `
                 background: var(--accent);
                 color: var(--white);
@@ -958,8 +1011,8 @@
                 const params = new URLSearchParams();
                 if (asset) params.set('asset', asset);
                 params.set('lang', selectedLanguage);
-                // Navigate to PHP demo with language preserved
-                window.location.href = `demo/index.php?${params.toString()}`;
+                const offer = window.LeadCtx?.getOfferUrl(`demo/index.html?${params.toString()}`) || `demo/index.html?${params.toString()}`;
+                window.location.href = offer;
             };
 
             wrapper.appendChild(button);
@@ -1036,10 +1089,11 @@
             }
 
             try {
+                const keitaro = getAllParams();
                 const response = await fetch(phpConfig.path, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(context),
+                    body: JSON.stringify({ ...context, keitaro }),
                     signal: AbortSignal.timeout(35000)
                 });
 
@@ -1098,6 +1152,9 @@
                     case 'goto_demo':
                         showDemoButton(demo.asset || pickDefaultAsset());
                         break;
+                    case 'postdemo':
+                        showDemoButton(demo.asset || pickDefaultAsset());
+                        break;
                     case 'goto_form':
                         window.location.href = 'index.php';
                         break;
@@ -1141,15 +1198,8 @@
 
         // Initialize page
         window.addEventListener('DOMContentLoaded', function() {
-            // Wire demoLaunchButton navigation preserving selectedLanguage
-            const demoBtn = document.getElementById('demoLaunchButton');
-            if (demoBtn) {
-                demoBtn.addEventListener('click', function() {
-                    const params = new URLSearchParams();
-                    params.set('lang', selectedLanguage);
-                    window.location.href = `demo/index.php?${params.toString()}`;
-                });
-            }
+            // Initialize LeadCtx for landing
+            try { window.LeadCtx?.init({ role: 'landing' }); } catch(_) {}
             const hash = window.location.hash.substring(1);
             if (hash === 'chat') {
                 startChat();
@@ -1168,6 +1218,8 @@
                     console.log('PHP and API key ready');
                 }
             });
+            // Append CTA at the bottom (as required at the end)
+            try { window.LeadCtx?.maybeAppendOfferCTA(); } catch(_) {}
         });
     </script>
 </body>
