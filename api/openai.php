@@ -67,6 +67,7 @@ $model    = $input['model'] ?? 'gpt-4o-mini';
 $keitaro  = $input['keitaro'] ?? [];
 $lang     = $input['lang'] ?? null; // enforced below
 $cta_url  = $input['cta_url'] ?? (getenv('CTA_URL') ?: '#');
+$finalize = !empty($input['finalize']);
 
 // ===== Debug / Client overrides (optional) =====
 $debug_ip = $input['debug_ip'] ?? null; // {"debug_ip":"8.8.8.8"}
@@ -443,7 +444,76 @@ $serverSignalsPayload = ["server_signals" => [
 $serverSignals = ["role"=>"system","content"=>json_encode($serverSignalsPayload, JSON_UNESCAPED_UNICODE)];
 
 // ===== OpenAI call =====
-$body = ["model"=>$model,"messages"=>array_merge([$system,$serverSignals], $messages),"temperature"=>0.6,"max_tokens"=>700];
+// ---- Helper: extract aggregated profile from assistant JSON replies ----
+function extract_lead_profile($messages) {
+    $profile = [
+        'income_range'=>null,
+        'job_title'=>null,
+        'family_status'=>null,
+        'readiness_score'=>null,
+        'lead_tier'=>null,
+        'engagement_level'=>null,
+        'segment'=>null
+    ];
+    foreach ($messages as $m) {
+        if (($m['role']??'') !== 'assistant') continue;
+        $c = $m['content'] ?? '';
+        if (!is_string($c)) continue;
+        $j = json_decode($c, true);
+        if (!is_array($j) || empty($j['updates'])) continue;
+        $u = $j['updates'];
+        if (isset($u['answers']) && is_array($u['answers'])) {
+            foreach (['income_range','job_title','family_status'] as $k) {
+                if (!empty($u['answers'][$k])) $profile[$k] = $u['answers'][$k];
+            }
+        }
+        foreach (['readiness_score','lead_tier','engagement_level','segment'] as $k) {
+            if (isset($u[$k]) && $u[$k] !== '') $profile[$k] = $u[$k];
+        }
+    }
+    return $profile;
+}
+
+// Build final prompt if finalize requested
+$finalMessages = $messages; // will append template-based user instruction if finalize
+if ($finalize) {
+    $profile = extract_lead_profile($messages);
+    $templatePath = __DIR__ . '/final_prompt.txt';
+    $template = file_exists($templatePath) ? file_get_contents($templatePath) : "# FINAL PROFILE\nLanguage: {{LANG}} ({{LANG_NATIVE}})\nCollected profile JSON:\n{{USER_PROFILE_JSON}}\nInstructions: craft final JSON reply as specified earlier with persuasive 2 short sentences and action=goto_form.";
+    $userProfileJson = json_encode($profile, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT);
+    $geoAddress = $detectedAddress ?: ($geo['city'] ?? ($k['city'] ?? '')); // from earlier
+    $nearbyStreets = implode(', ', array_slice($signals['geo_granularity']['nearby_streets'] ?? [],0,3));
+    $placeLine = trim($geoAddress . ($nearbyStreets ? ' | ' . $nearbyStreets : ''));
+    $replacements = [
+        '{{LANG}}'=>$lang,
+        '{{LANG_NATIVE}}'=>$langNative,
+        '{{USER_PROFILE_JSON}}'=>$userProfileJson,
+        '{{INCOME_RANGE}}'=>$profile['income_range'] ?? '',
+        '{{JOB_TITLE}}'=>$profile['job_title'] ?? '',
+        '{{FAMILY_STATUS}}'=>$profile['family_status'] ?? '',
+        '{{READINESS_SCORE}}'=>$profile['readiness_score'] ?? '',
+        '{{LEAD_TIER}}'=>$profile['lead_tier'] ?? '',
+        '{{ENGAGEMENT_LEVEL}}'=>$profile['engagement_level'] ?? '',
+        '{{SEGMENT}}'=>$profile['segment'] ?? '',
+        '{{DEVICE_MODEL}}'=>$detectedPhone,
+        '{{GEO_ADDRESS}}'=>$geoAddress ?: 'n/a',
+        '{{NEARBY_STREETS}}'=>$nearbyStreets ?: 'n/a',
+        '{{AFFLUENCE_SIGNAL}}'=>$signals['affluence_signal'] ?? '',
+        '{{TECH_SAVVY}}'=>$signals['tech_savvy'] ?? '',
+        '{{ISP_TYPE}}'=>$signals['isp_type'] ?? ''
+    ];
+    $finalPrompt = strtr($template, $replacements);
+    $finalPrompt .= "\n\n# SYSTEM INSTRUCTIONS\nReturn STRICT JSON with keys reply, updates (reuse prior), action='goto_form'. reply: EXACTLY 2 short persuasive sentences in {$langNative}. Do not include markup.";
+    // Append as user message (explicit instruction)
+    $finalMessages[] = ['role'=>'user','content'=>$finalPrompt];
+}
+
+$body = [
+    "model"=>$model,
+    "messages"=>array_merge([$system,$serverSignals], $finalMessages),
+    "temperature"=>0.6,
+    "max_tokens"=>700
+];
 
 $ch = curl_init("https://api.openai.com/v1/chat/completions");
 curl_setopt_array($ch, [

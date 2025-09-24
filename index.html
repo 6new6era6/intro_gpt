@@ -1158,14 +1158,9 @@
         }
 
         async function sendFinalPortraitRequest() {
-            const lang = getChatLang();
-            const finalPrompt = {
-                role: 'user',
-                content: 'FINALIZE_PROFILE| Provide concise investment profile summary based on previous dialog. Include note: user receives a personal manager who will contact them and provide access to AI income tools.'
-            };
-            context.messages.push(finalPrompt);
-            persistChat();
-            await askOpenAI('[system] finalize_profile');
+                // Trigger backend finalize flow (no manual prompt injection now)
+                persistChat();
+                await askOpenAI('[system] finalize_profile', true);
             finalizePortrait();
         }
 
@@ -1270,7 +1265,7 @@
 
         let phpConfig = { path: null, available: false, hasApiKey: false };
 
-        async function askOpenAI(userText) {
+        async function askOpenAI(userText, finalizeFlag = false) {
             context.messages.push({ role: 'user', content: userText });
             const typing = showTyping();
 
@@ -1288,7 +1283,7 @@
                 const response = await fetch(phpConfig.path, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...context, keitaro, lang, cta_url }),
+                    body: JSON.stringify({ ...context, keitaro, lang, cta_url, finalize: finalizeFlag }),
                     signal: AbortSignal.timeout(35000)
                 });
 
