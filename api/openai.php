@@ -361,6 +361,8 @@ $sysText =
 "- Use user language for all prompts and replies.\n".
 "- {$langDirective}\n".
 "- Replies MUST be 1–2 simple, confident sentences, direct and action-oriented.\n".
+"- Never mention any button unless user typed the exact word START (case-insensitive).\n".
+"- If user has NOT yet typed START: end your reply naturally about opportunity; model will append instruction. Do NOT ask them to type start yourself.\n".
 "- Start naturally with locality if confidence ≥ 0.8 (mention address or nearby streets).\n".
 "- Mention device early (use exact model string if available).\n".
 "- **Never ask income directly.** Use soft lifestyle probes: free time, hobbies, travel frequency, eating out, shopping habits, subscriptions, car ownership, kids — then infer income bracket.\n".
@@ -452,7 +454,8 @@ for ($i = 0; $i < count($messages); $i++) {
 $cta_payload = ["label" => "START", "href" => $cta_url, "visible" => false];
 
 // функція вирішуємо, чи показувати кнопку зараз
-$agreed = preg_match('/\b(давай|давайте|готов|поехали|перейд(у|ём|ем)|start|go)\b/ui', $lastUser);
+// Hardcoded trigger: only exact word 'start' (case-insensitive, trimmed)
+$agreed = preg_match('/\bstart\b/i', $lastUser);
 
 if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
     $action = strtolower($parsed['action']);
@@ -461,16 +464,33 @@ if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
         ? $parsed['updates']['answers']
         : ($parsed['updates']['answers'] ?? []));
     // умова показу CTA
-    $show_cta = (
-        in_array($action, ['goto_form','goto_demo'], true) ||
-        $agreed ||
-        ($score >= 80 && $answersCount >= 2 && $user_turns >= 2)
-    );
+    // New strict logic: show CTA ONLY if user explicitly typed 'start'
+    $show_cta = $agreed === 1;
 
     $cta_payload['visible'] = $show_cta;
     if (!$show_cta) { // sanitize so старий фронт не показує
         $cta_payload['href'] = '';
         $cta_payload['label'] = '';
+    }
+
+    // If CTA not yet available, append instruction (language-aware) to reply once
+    if (!$show_cta && is_array($parsed) && isset($parsed['reply'])) {
+        $instruction = '';
+        switch (strtolower($lang)) {
+            case 'ru': $instruction = ' Напишите слово START чтобы получить первую прибыль.'; break;
+            case 'uk': $instruction = ' Напишіть слово START щоб отримати свій перший прибуток.'; break;
+            case 'en': $instruction = ' Type the word START to begin earning your first profit.'; break;
+            case 'es': $instruction = ' Escribe la palabra START para comenzar a ganar tu primera ganancia.'; break;
+            case 'fr': $instruction = ' Tapez le mot START pour commencer à générer votre premier profit.'; break;
+            case 'de': $instruction = ' Tippe das Wort START um deinen ersten Gewinn zu erhalten.'; break;
+            case 'pt': $instruction = ' Digite a palavra START para começar a obter seu primeiro lucro.'; break;
+            case 'it': $instruction = ' Digita la parola START per iniziare a ottenere il tuo primo profitto.'; break;
+            case 'zh': $instruction = ' 输入 START 开始获取您的第一笔收益。'; break;
+            case 'ja': $instruction = ' START と入力して最初の利益を得ましょう。'; break;
+        }
+        if ($instruction && strpos($parsed['reply'], 'START') === false) {
+            $parsed['reply'] = rtrim($parsed['reply']).$instruction;
+        }
     }
     $parsed['cta'] = $cta_payload;
     $parsed['redirect'] = false; // НІКОЛИ не редиректимо з бекенда
