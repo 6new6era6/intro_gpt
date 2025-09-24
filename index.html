@@ -997,13 +997,20 @@
         }
 
         function showCtaButton(cta) {
+            if (!cta || cta.visible !== true) return; // не показуємо якщо бекенд не дозволив
             const wrapper = document.createElement('div');
             wrapper.style.cssText = 'margin-top: 16px; text-align: center;';
             wrapper.className = 'cta-wrapper';
 
             const a = document.createElement('a');
-            a.href = cta.href || '#';
-            a.textContent = cta.label || 'Перейти к регистрации';
+            const lang = getChatLang();
+            a.href = (cta.href && cta.visible) ? cta.href : '#';
+            // якщо бекенд дав generic START або немає label — локалізуємо
+            let label = cta.label || '';
+            if (!label || /^start$/i.test(label.trim())) {
+                label = ctaLabels[lang] || ctaLabels.en;
+            }
+            a.textContent = label;
             a.className = 'cta-button';
             a.rel = 'nofollow';
             a.target = '_self'; // або '_blank' для нової вкладки

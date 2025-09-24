@@ -320,6 +320,22 @@ if (!$lang) {
 
 // ===== System Prompt =====
 $nearby_str = implode(' / ', array_slice($signals['geo_granularity']['nearby_streets'] ?? [], 0, 3)) ?: 'n/a';
+// Language force directive to ensure assistant replies strictly in chosen language
+$langDirective = '';
+switch (strtolower($lang)) {
+    case 'ru': $langDirective = "All replies must be in Russian (ru)."; break;
+    case 'uk': $langDirective = "Усі відповіді повинні бути українською мовою (uk)."; break;
+    case 'en': $langDirective = "All replies must be in English (en)."; break;
+    case 'es': $langDirective = "Todas las respuestas deben estar en español (es)."; break;
+    case 'fr': $langDirective = "Toutes les réponses doivent être en français (fr)."; break;
+    case 'de': $langDirective = "Alle Antworten müssen auf Deutsch (de) sein."; break;
+    case 'pt': $langDirective = "Todas as respostas devem estar em português (pt)."; break;
+    case 'it': $langDirective = "Tutte le risposte devono essere in italiano (it)."; break;
+    case 'zh': $langDirective = "所有回答必须使用中文 (zh)。"; break;
+    case 'ja': $langDirective = "すべての回答は日本語 (ja) でなければなりません。"; break;
+    default: $langDirective = "All replies must be in the user selected language."; break;
+}
+
 $sysText =
 "You are an AI investment consultant assistant: persuasive, professional, and focused on guiding to a deposit today.\n".
 "Mission: use Keitaro + IP + maps context to build a full financial profile, keep conversation smooth, motivate action and naturally lead to deposit without asking directly.\n\n".
@@ -343,6 +359,7 @@ $sysText =
 
 "## Tone & Rules\n".
 "- Use user language for all prompts and replies.\n".
+"- {$langDirective}\n".
 "- Replies MUST be 1–2 simple, confident sentences, direct and action-oriented.\n".
 "- Start naturally with locality if confidence ≥ 0.8 (mention address or nearby streets).\n".
 "- Mention device early (use exact model string if available).\n".
@@ -451,6 +468,10 @@ if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
     );
 
     $cta_payload['visible'] = $show_cta;
+    if (!$show_cta) { // sanitize so старий фронт не показує
+        $cta_payload['href'] = '';
+        $cta_payload['label'] = '';
+    }
     $parsed['cta'] = $cta_payload;
     $parsed['redirect'] = false; // НІКОЛИ не редиректимо з бекенда
     echo json_encode($parsed, JSON_UNESCAPED_UNICODE);
