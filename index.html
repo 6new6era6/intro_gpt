@@ -716,7 +716,7 @@
                 demoButton: "Go to Demo",
                 errorMessage: "Sorry, an error occurred. Please try again.",
                 profileReadyMessage: "Your investment profile is ready. You can proceed to registration to start using AI-driven investment opportunities.",
-                messagesLeft: (n)=>`You can send ${n} more messages before profile creation`,
+                messagesLeft: (n)=>`You can send ${n} more messages`,
                 finalizingNotice: "Processing your profile...",
             },
             ru: {
@@ -728,7 +728,7 @@
                 demoButton: "Перейти к демо",
                 errorMessage: "Извините, произошла ошибка. Попробуйте еще раз.",
                 profileReadyMessage: "Ваш инвестиционный портрет сформирован. Вы можете перейти к регистрации и начать использовать возможности заработка с помощью искусственного интеллекта.",
-                messagesLeft: (n)=>`Вы можете отправить ещё ${n} сообщений до формирования профиля`,
+                messagesLeft: (n)=>`Вы можете отправить ещё ${n} сообщений`,
                 finalizingNotice: "Формируем ваш профиль...",
             },
             es: {
@@ -740,7 +740,7 @@
                 demoButton: "Ir al Demo",
                 errorMessage: "Lo siento, ocurrió un error. Inténtalo de nuevo.",
                 profileReadyMessage: "Tu perfil de inversión está listo. Puedes proceder al registro para empezar a usar oportunidades impulsadas por IA.",
-                messagesLeft: (n)=>`Puedes enviar ${n} mensajes más antes de crear el perfil`,
+                messagesLeft: (n)=>`Puedes enviar ${n} mensajes más`,
                 finalizingNotice: "Procesando tu perfil...",
             },
             fr: {
@@ -752,7 +752,7 @@
                 demoButton: "Aller à la Démo",
                 errorMessage: "Désolé, une erreur s'est produite. Veuillez réessayer.",
                 profileReadyMessage: "Votre profil d'investissement est prêt. Vous pouvez passer à l'inscription pour commencer à utiliser les opportunités basées sur l'IA.",
-                messagesLeft: (n)=>`Vous pouvez encore envoyer ${n} messages avant la création du profil`,
+                messagesLeft: (n)=>`Vous pouvez encore envoyer ${n} messages`,
                 finalizingNotice: "Analyse de votre profil...",
             },
             de: {
@@ -764,7 +764,7 @@
                 demoButton: "Zur Demo gehen",
                 errorMessage: "Entschuldigung, ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
                 profileReadyMessage: "Ihr Investmentprofil ist fertig. Sie können jetzt zur Registrierung übergehen und KI-gestützte Chancen nutzen.",
-                messagesLeft: (n)=>`Sie können noch ${n} Nachrichten senden bevor das Profil erstellt wird`,
+                messagesLeft: (n)=>`Sie können noch ${n} Nachrichten senden`,
                 finalizingNotice: "Profil wird erstellt...",
             },
             pt: {
@@ -776,7 +776,7 @@
                 demoButton: "Ir para Demo",
                 errorMessage: "Desculpe, ocorreu um erro. Tente novamente.",
                 profileReadyMessage: "Seu perfil de investimento está pronto. Você pode prosseguir para o registro e começar a usar oportunidades impulsionadas por IA.",
-                messagesLeft: (n)=>`Você pode enviar mais ${n} mensagens antes da criação do perfil`,
+                messagesLeft: (n)=>`Você pode enviar mais ${n} mensagens`,
                 finalizingNotice: "Processando seu perfil...",
             },
             it: {
@@ -788,7 +788,7 @@
                 demoButton: "Vai alla Demo",
                 errorMessage: "Spiacente, si è verificato un errore. Riprova.",
                 profileReadyMessage: "Il tuo profilo di investimento è pronto. Puoi procedere alla registrazione per iniziare a usare le opportunità basate sull'IA.",
-                messagesLeft: (n)=>`Puoi inviare ancora ${n} messaggi prima della creazione del profilo`,
+                messagesLeft: (n)=>`Puoi inviare ancora ${n} messaggi`,
                 finalizingNotice: "Elaborazione del tuo profilo...",
             },
             tr: {
@@ -800,7 +800,7 @@
                 demoButton: "Demo'ya Git",
                 errorMessage: "Üzgünüz, bir hata oluştu. Lütfen tekrar deneyin.",
                 profileReadyMessage: "Yatırım profiliniz hazır. Kayıta geçebilir ve yapay zeka destekli fırsatları kullanmaya başlayabilirsiniz.",
-                messagesLeft: (n)=>`Profil oluşturulmadan önce ${n} mesaj daha gönderebilirsiniz`,
+                messagesLeft: (n)=>`${n} mesaj daha gönderebilirsiniz`,
                 finalizingNotice: "Profiliniz işleniyor...",
             },
             zh: {
@@ -812,7 +812,7 @@
                 demoButton: "前往演示",
                 errorMessage: "抱歉，发生了错误。请重试。",
                 profileReadyMessage: "你的投资画像已生成。现在可以前往注册并开始使用 AI 驱动的投资机会。",
-                messagesLeft: (n)=>`在创建投资画像前你还可以发送 ${n} 条消息`,
+                messagesLeft: (n)=>`你还可以发送 ${n} 条消息`,
                 finalizingNotice: "正在生成你的画像...",
             },
             ja: {
@@ -824,7 +824,7 @@
                 demoButton: "デモに移動",
                 errorMessage: "申し訳ございませんが、エラーが発生しました。もう一度お試しください。",
                 profileReadyMessage: "あなたの投資プロフィールが完成しました。登録に進み、AIを活用したチャンスを使い始めましょう。",
-                messagesLeft: (n)=>`プロフィール作成前にあと ${n} 件送信できます`,
+                messagesLeft: (n)=>`あと ${n} 件送信できます`,
                 finalizingNotice: "プロフィールを生成しています...",
             }
         };
@@ -872,7 +872,7 @@
         function startChat() {
             // Update chat interface with selected language
             document.getElementById('welcomeMessage').textContent = translations[selectedLanguage].welcomeMessage;
-            document.getElementById('chatInput').placeholder = translations[selectedLanguage].inputPlaceholder;
+            updatePlaceholder();
 
             document.querySelector('.container').style.display = 'none';
             document.getElementById('chatContainer').classList.add('active');
@@ -932,15 +932,10 @@
         }
 
         function updatePlaceholder() {
+            if (!chatInput) return;
             const left = MESSAGE_LIMIT - userMessageCount;
             const lang = getChatLang();
-            if (left > 0) {
-                const base = translations[lang].inputPlaceholder;
-                const addon = translations[lang].messagesLeft(left);
-                chatInput.placeholder = `${base} (${addon})`;
-            } else {
-                chatInput.placeholder = translations[lang].finalizingNotice;
-            }
+            chatInput.placeholder = left > 0 ? translations[lang].messagesLeft(left) : translations[lang].finalizingNotice;
         }
 
         // Collect comprehensive Keitaro + UTM + click params
@@ -1355,9 +1350,7 @@
                 if (userMessageCount < MESSAGE_LIMIT) {
                     if (action === 'goto_demo' || action === 'postdemo' || action === 'next_step') {
                         showDemoButton(demo.asset || pickDefaultAsset());
-                    } else if (cta && cta.href && !data.redirect) {
-                        showCtaButton(cta); // allow marketing CTA but not finalize
-                    }
+                    } 
                 } else {
                     // After limit reached, any finalize-type action triggers finalize (already done via user flow)
                 }
