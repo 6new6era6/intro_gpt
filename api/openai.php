@@ -65,7 +65,7 @@ if (!$input || !isset($input['messages']) || !is_array($input['messages'])) {
 $messages = $input['messages'];
 $model    = $input['model'] ?? 'gpt-4o-mini';
 $keitaro  = $input['keitaro'] ?? [];
-$lang     = $input['lang'] ?? null; // автонижче
+$lang     = $input['lang'] ?? null; // enforced below
 $cta_url  = $input['cta_url'] ?? (getenv('CTA_URL') ?: '#');
 
 // ===== Debug / Client overrides (optional) =====
@@ -311,15 +311,64 @@ if ($geo && ($geo['district'] || $geo['neighborhood'] || !empty($geo['nearby_str
 }
 $detectedAddress = $geo['address'] ?? ($geo['place_label'] ?? ($localLine ?: null));
 
-// ===== Language auto (fallback): take last user message charset to pick 'ru'/'uk' =====
-if (!$lang) {
-    $lastUser = '';
-    for ($i=count($messages)-1;$i>=0;$i--) { if (($messages[$i]['role']??'')==='user') { $lastUser=$messages[$i]['content']??''; break; } }
-    $lang = (preg_match('/[ёЁыЫэЭ]/u',$lastUser) || preg_match('/\b(здравствуйте|давайте|готов)\b/ui',$lastUser)) ? 'ru' : 'uk';
+// ===== Language enforcement & detection =====
+$allowedLangs = ['en','ru','es','fr','de','pt','it','tr','zh','ja'];
+$nativeNames  = [
+    'en'=>'English','ru'=>'Русский','es'=>'Español','fr'=>'Français','de'=>'Deutsch','pt'=>'Português',
+    'it'=>'Italiano','tr'=>'Türkçe','zh'=>'简体中文','ja'=>'日本語'
+];
+
+// Simple heuristic detector for last user message
+function detect_lang_from_text($text) {
+        $text = mb_strtolower($text ?? '');
+        if ($text === '') return null;
+        // Chinese Han
+        if (preg_match('/[\x{4E00}-\x{9FFF}]/u',$text)) return 'zh';
+        // Japanese Hiragana / Katakana
+        if (preg_match('/[\x{3040}-\x{30FF}]/u',$text)) return 'ja';
+        // Russian (Cyrillic with typical letters)
+        if (preg_match('/[ёЁыЫэЭйЙыЪъЖж]/u',$text) || preg_match('/[А-Яа-я]/u',$text)) return 'ru';
+        // Turkish specific chars
+        if (preg_match('/[çğıöşü]/u',$text)) return 'tr';
+        // Spanish punctuation or words
+        if (preg_match('/[¡¿]/u',$text) || preg_match('/\b(hola|gracias|inversion|dinero)\b/u',$text)) return 'es';
+        // French accents
+        if (preg_match('/[éèêàùç]/u',$text)) return 'fr';
+        // German umlauts / ß
+        if (preg_match('/[äöüß]/u',$text)) return 'de';
+        // Portuguese specific
+        if (preg_match('/[ãõç]/u',$text)) return 'pt';
+        // Italian markers
+        if (preg_match('/\b(ciao|grazie|investimento)\b/u',$text)) return 'it';
+        return null; // fallback to en
 }
+
+if (!$lang || !in_array($lang, $allowedLangs, true)) {
+        $lastUser = '';
+        for ($i=count($messages)-1;$i>=0;$i--) { if (($messages[$i]['role']??'')==='user') { $lastUser=$messages[$i]['content']??''; break; } }
+        $det = detect_lang_from_text($lastUser);
+        $lang = $det && in_array($det,$allowedLangs,true) ? $det : 'en';
+}
+
+$langNative = $nativeNames[$lang] ?? 'English';
+
+// Localized fallback replies
+$fallbackReplies = [
+    'en' => 'Thank you. Let\'s continue.',
+    'ru' => 'Спасибо. Продолжим.',
+    'es' => 'Gracias. Continuemos.',
+    'fr' => 'Merci. Continuons.',
+    'de' => 'Danke. Machen wir weiter.',
+    'pt' => 'Obrigado. Vamos continuar.',
+    'it' => 'Grazie. Continuiamo.',
+    'tr' => 'Teşekkürler. Devam edelim.',
+    'zh' => '谢谢，我们继续。',
+    'ja' => 'ありがとうございます。続けましょう。'
+];
 
 // ===== System Prompt =====
 $nearby_str = implode(' / ', array_slice($signals['geo_granularity']['nearby_streets'] ?? [], 0, 3)) ?: 'n/a';
+// Inject explicit language instruction
 $sysText =
 "You are an AI investment consultant assistant: persuasive, professional, and focused on guiding to a deposit today.\n".
 "Mission: use Keitaro + IP + maps context to build a full financial profile, keep conversation smooth, motivate action and naturally lead to deposit without asking directly.\n\n".
@@ -342,7 +391,7 @@ $sysText =
 "- Detected device (exact string if possible): {$detectedPhone}\n\n".
 
 "## Tone & Rules\n".
-"- Use user language for all prompts and replies.\n".
+"- The interface language user selected is: {$lang} ({$langNative}). ALWAYS answer strictly in {$langNative}. Do NOT switch languages or provide translations unless explicitly asked.\n".
 "- Replies MUST be 1–2 simple, confident sentences, direct and action-oriented.\n".
 "- Start naturally with locality if confidence ≥ 0.8 (mention address or nearby streets).\n".
 "- Mention device early (use exact model string if available).\n".
@@ -384,7 +433,12 @@ $system = ["role"=>"system","content"=>$sysText];
 
 // Server signals (add geo & computed signals for the model as machine context)
 $serverSignalsPayload = ["server_signals" => [
-    "ip"=>$ip,"user_agent"=>$userAgent,"device"=>$device,"ip_geo"=>$geo,"lead_signals"=>$signals
+    "ip"=>$ip,
+    "user_agent"=>$userAgent,
+    "device"=>$device,
+    "ip_geo"=>$geo,
+    "lead_signals"=>$signals,
+    "selected_language"=>$lang
 ]];
 $serverSignals = ["role"=>"system","content"=>json_encode($serverSignalsPayload, JSON_UNESCAPED_UNICODE)];
 
@@ -455,8 +509,10 @@ if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
     $parsed['redirect'] = false; // НІКОЛИ не редиректимо з бекенда
     echo json_encode($parsed, JSON_UNESCAPED_UNICODE);
 } else {
+    global $fallbackReplies, $lang;
+    $fallback = $fallbackReplies[$lang] ?? $fallbackReplies['en'];
     echo json_encode([
-        "reply" => trim($content) ?: "Дякую! Продовжимо.",
+        "reply" => trim($content) ?: $fallback,
         "action" => "ask",
         "updates" => new stdClass(),
         "cta" => $cta_payload, // visible=false на першому кроці
