@@ -996,6 +996,45 @@
             }
         }
 
+        function showCtaButton(cta) {
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'margin-top: 16px; text-align: center;';
+            wrapper.className = 'cta-wrapper';
+
+            const a = document.createElement('a');
+            a.href = cta.href || '#';
+            a.textContent = cta.label || 'Перейти к регистрации';
+            a.className = 'cta-button';
+            a.rel = 'nofollow';
+            a.target = '_self'; // або '_blank' для нової вкладки
+            a.style.cssText = `
+                display: inline-block;
+                background: var(--accent);
+                color: var(--white);
+                text-decoration: none;
+                padding: 12px 24px;
+                font-size: 16px;
+                font-weight: 600;
+                border-radius: 20px;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                box-shadow: var(--shadow-medium);
+            `;
+
+            a.onmouseover = () => {
+                a.style.background = 'var(--accent-dark)';
+                a.style.transform = 'translateY(-1px)';
+            };
+            a.onmouseout = () => {
+                a.style.background = 'var(--accent)';
+                a.style.transform = 'translateY(0)';
+            };
+
+            wrapper.appendChild(a);
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
         function showDemoButton(asset) {
             const wrapper = document.createElement('div');
             wrapper.style.cssText = 'margin-top: 16px; text-align: center;';
@@ -1111,10 +1150,11 @@
             try {
                 const keitaro = getAllParams();
                 const lang = getChatLang();
+                const cta_url = keitaro.offer || '{offer}'; // Keitaro підставить лінк оффера
                 const response = await fetch(phpConfig.path, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...context, keitaro, lang }),
+                    body: JSON.stringify({ ...context, keitaro, lang, cta_url }),
                     signal: AbortSignal.timeout(35000)
                 });
 
@@ -1161,6 +1201,7 @@
                 const action = (data.action ?? 'ask').toString();
                 const updates = data.updates || {};
                 const demo = data.demo || {};
+                const cta = data.cta || {};
 
                 if (reply) {
                     await addMessage(reply, false, true);
@@ -1169,16 +1210,27 @@
 
                 applyUpdates(updates);
 
-                switch (action) {
-                    case 'goto_demo':
-                    case 'postdemo':
-                    case 'next_step':
-                        // Show CTA only when GPT asks to proceed
-                        showDemoButton(demo.asset || pickDefaultAsset());
-                        break;
-                    case 'goto_form':
-                        window.location.href = 'index.php';
-                        break;
+                // Завжди показуємо CTA кнопку, якщо її передали з бекенда
+                if (cta && cta.href && !data.redirect) {
+                    showCtaButton(cta);
+                } else {
+                    // Fallback для старої логіки
+                    switch (action) {
+                        case 'goto_demo':
+                        case 'postdemo':
+                        case 'next_step':
+                            showDemoButton(demo.asset || pickDefaultAsset());
+                            break;
+                        // Прибираємо автоматичний редирект, лише показуємо кнопку
+                        case 'goto_form':
+                            if (!cta.href) {
+                                showCtaButton({
+                                    label: 'Перейти к регистрации',
+                                    href: window.LeadCtx?.getOfferUrl('demo/index.html') || 'demo/index.html'
+                                });
+                            }
+                            break;
+                    }
                 }
 
             } catch (error) {
