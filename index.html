@@ -716,6 +716,8 @@
                 demoButton: "Go to Demo",
                 errorMessage: "Sorry, an error occurred. Please try again.",
                 profileReadyMessage: "Your investment profile is ready. You can proceed to registration to start using AI-driven investment opportunities.",
+                messagesLeft: (n)=>`You can send ${n} more messages before profile creation`,
+                finalizingNotice: "Processing your profile...",
             },
             ru: {
                 title: "Начнем инвестировать",
@@ -726,6 +728,8 @@
                 demoButton: "Перейти к демо",
                 errorMessage: "Извините, произошла ошибка. Попробуйте еще раз.",
                 profileReadyMessage: "Ваш инвестиционный портрет сформирован. Вы можете перейти к регистрации и начать использовать возможности заработка с помощью искусственного интеллекта.",
+                messagesLeft: (n)=>`Вы можете отправить ещё ${n} сообщений до формирования профиля`,
+                finalizingNotice: "Формируем ваш профиль...",
             },
             es: {
                 title: "Comencemos a Invertir",
@@ -736,6 +740,8 @@
                 demoButton: "Ir al Demo",
                 errorMessage: "Lo siento, ocurrió un error. Inténtalo de nuevo.",
                 profileReadyMessage: "Tu perfil de inversión está listo. Puedes proceder al registro para empezar a usar oportunidades impulsadas por IA.",
+                messagesLeft: (n)=>`Puedes enviar ${n} mensajes más antes de crear el perfil`,
+                finalizingNotice: "Procesando tu perfil...",
             },
             fr: {
                 title: "Commençons à Investir",
@@ -746,6 +752,8 @@
                 demoButton: "Aller à la Démo",
                 errorMessage: "Désolé, une erreur s'est produite. Veuillez réessayer.",
                 profileReadyMessage: "Votre profil d'investissement est prêt. Vous pouvez passer à l'inscription pour commencer à utiliser les opportunités basées sur l'IA.",
+                messagesLeft: (n)=>`Vous pouvez encore envoyer ${n} messages avant la création du profil`,
+                finalizingNotice: "Analyse de votre profil...",
             },
             de: {
                 title: "Lasst uns Investieren",
@@ -756,6 +764,8 @@
                 demoButton: "Zur Demo gehen",
                 errorMessage: "Entschuldigung, ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
                 profileReadyMessage: "Ihr Investmentprofil ist fertig. Sie können jetzt zur Registrierung übergehen und KI-gestützte Chancen nutzen.",
+                messagesLeft: (n)=>`Sie können noch ${n} Nachrichten senden bevor das Profil erstellt wird`,
+                finalizingNotice: "Profil wird erstellt...",
             },
             pt: {
                 title: "Vamos Começar a Investir",
@@ -766,6 +776,8 @@
                 demoButton: "Ir para Demo",
                 errorMessage: "Desculpe, ocorreu um erro. Tente novamente.",
                 profileReadyMessage: "Seu perfil de investimento está pronto. Você pode prosseguir para o registro e começar a usar oportunidades impulsionadas por IA.",
+                messagesLeft: (n)=>`Você pode enviar mais ${n} mensagens antes da criação do perfil`,
+                finalizingNotice: "Processando seu perfil...",
             },
             it: {
                 title: "Iniziamo a Investire",
@@ -776,6 +788,8 @@
                 demoButton: "Vai alla Demo",
                 errorMessage: "Spiacente, si è verificato un errore. Riprova.",
                 profileReadyMessage: "Il tuo profilo di investimento è pronto. Puoi procedere alla registrazione per iniziare a usare le opportunità basate sull'IA.",
+                messagesLeft: (n)=>`Puoi inviare ancora ${n} messaggi prima della creazione del profilo`,
+                finalizingNotice: "Elaborazione del tuo profilo...",
             },
             tr: {
                 title: "Yatırıma Başlayalım",
@@ -786,6 +800,8 @@
                 demoButton: "Demo'ya Git",
                 errorMessage: "Üzgünüz, bir hata oluştu. Lütfen tekrar deneyin.",
                 profileReadyMessage: "Yatırım profiliniz hazır. Kayıta geçebilir ve yapay zeka destekli fırsatları kullanmaya başlayabilirsiniz.",
+                messagesLeft: (n)=>`Profil oluşturulmadan önce ${n} mesaj daha gönderebilirsiniz`,
+                finalizingNotice: "Profiliniz işleniyor...",
             },
             zh: {
                 title: "开始投资",
@@ -796,6 +812,8 @@
                 demoButton: "前往演示",
                 errorMessage: "抱歉，发生了错误。请重试。",
                 profileReadyMessage: "你的投资画像已生成。现在可以前往注册并开始使用 AI 驱动的投资机会。",
+                messagesLeft: (n)=>`在创建投资画像前你还可以发送 ${n} 条消息`,
+                finalizingNotice: "正在生成你的画像...",
             },
             ja: {
                 title: "投資を始めましょう",
@@ -806,6 +824,8 @@
                 demoButton: "デモに移動",
                 errorMessage: "申し訳ございませんが、エラーが発生しました。もう一度お試しください。",
                 profileReadyMessage: "あなたの投資プロフィールが完成しました。登録に進み、AIを活用したチャンスを使い始めましょう。",
+                messagesLeft: (n)=>`プロフィール作成前にあと ${n} 件送信できます`,
+                finalizingNotice: "プロフィールを生成しています...",
             }
         };
 
@@ -858,6 +878,11 @@
             document.getElementById('chatContainer').classList.add('active');
 
             try { window.LeadCtx?.addChatMessage('system', `chat_started|lang:${selectedLanguage}`); } catch(_) {}
+            // Add system mission context (not shown to user directly)
+            context.messages.push({
+                role: 'system',
+                content: 'You are an AI investment assistant that helps the user earn based on global market, macro, news and on-chain data. Collect concise info within 10 user messages, then produce a final investment profile and inform them they received a personal manager who will contact them and provide access to AI income tools.'
+            });
         }
 
         // Auto-advance from welcome screen to language selection
@@ -872,6 +897,51 @@
 
         // Chat context for OpenAI
         const context = { messages: [], model: 'gpt-4o-mini' };
+        const MESSAGE_LIMIT = 10;
+        let userMessageCount = 0;
+        const STORAGE_CHAT_KEY = 'leadChatHistory';
+        const STORAGE_STATE_KEY = 'leadChatState';
+
+        function persistChat() {
+            try {
+                localStorage.setItem(STORAGE_CHAT_KEY, JSON.stringify(context.messages));
+                localStorage.setItem(STORAGE_STATE_KEY, JSON.stringify({ userMessageCount, selectedLanguage }));
+            } catch(_){ }
+        }
+
+        function restoreChat() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_CHAT_KEY) || '[]');
+                const state = JSON.parse(localStorage.getItem(STORAGE_STATE_KEY) || '{}');
+                if (state.selectedLanguage) selectedLanguage = state.selectedLanguage;
+                if (Array.isArray(saved) && saved.length) {
+                    document.querySelector('.container').style.display = 'none';
+                    document.getElementById('chatContainer').classList.add('active');
+                    saved.forEach(msg => {
+                        if (msg.role === 'user') addMessage(msg.content, true, false);
+                        if (msg.role === 'assistant') addMessage(msg.content, false, false);
+                    });
+                    userMessageCount = state.userMessageCount || saved.filter(m=>m.role==='user').length;
+                    if (userMessageCount >= MESSAGE_LIMIT) {
+                        finalizePortrait(undefined, true); // ensure UI state
+                    } else {
+                        updatePlaceholder();
+                    }
+                }
+            } catch(_){ }
+        }
+
+        function updatePlaceholder() {
+            const left = MESSAGE_LIMIT - userMessageCount;
+            const lang = getChatLang();
+            if (left > 0) {
+                const base = translations[lang].inputPlaceholder;
+                const addon = translations[lang].messagesLeft(left);
+                chatInput.placeholder = `${base} (${addon})`;
+            } else {
+                chatInput.placeholder = translations[lang].finalizingNotice;
+            }
+        }
 
         // Collect comprehensive Keitaro + UTM + click params
         function getAllParams() {
@@ -1076,16 +1146,32 @@
             container.appendChild(a);
         }
 
-        function finalizePortrait(optionalOfferHref) {
+        function finalizePortrait(optionalOfferHref, skipMessage) {
             try {
                 const stored = sessionStorage.leadCtx || '{}';
                 localStorage.leadPortrait = stored; // persist
             } catch(_) {}
             const lang = getChatLang();
-            const msg = translations[lang]?.profileReadyMessage || translations.en.profileReadyMessage;
-            addMessage(msg, false, true);
+            if (!skipMessage) {
+                const msg = translations[lang]?.profileReadyMessage || translations.en.profileReadyMessage;
+                addMessage(msg, false, true);
+                context.messages.push({ role: 'assistant', content: msg });
+            }
             context.messages.push({ role: 'system', content: 'portrait_completed' });
             showRegistrationButton(optionalOfferHref || window.LeadCtx?.getOfferUrl('{offer}') || '{offer}');
+            persistChat();
+        }
+
+        async function sendFinalPortraitRequest() {
+            const lang = getChatLang();
+            const finalPrompt = {
+                role: 'user',
+                content: 'FINALIZE_PROFILE| Provide concise investment profile summary based on previous dialog. Include note: user receives a personal manager who will contact them and provide access to AI income tools.'
+            };
+            context.messages.push(finalPrompt);
+            persistChat();
+            await askOpenAI('[system] finalize_profile');
+            finalizePortrait();
         }
 
         function showDemoButton(asset) {
@@ -1259,31 +1345,21 @@
                 if (reply) {
                     await addMessage(reply, false, true);
                     context.messages.push({ role: 'assistant', content: reply });
+                    persistChat();
                 }
 
                 applyUpdates(updates);
 
                 // Завжди показуємо CTA кнопку, якщо її передали з бекенда
-                let portraitActions = ['goto_form','portrait_ready','registration','form'];
-                if (cta && cta.href && !data.redirect) {
-                    // If CTA explicitly provided and indicates form step -> finalize
-                    if (portraitActions.includes(action)) {
-                        finalizePortrait(cta.href);
-                    } else {
-                        showCtaButton(cta);
+                // Until MESSAGE_LIMIT reached, ignore early finalize actions
+                if (userMessageCount < MESSAGE_LIMIT) {
+                    if (action === 'goto_demo' || action === 'postdemo' || action === 'next_step') {
+                        showDemoButton(demo.asset || pickDefaultAsset());
+                    } else if (cta && cta.href && !data.redirect) {
+                        showCtaButton(cta); // allow marketing CTA but not finalize
                     }
                 } else {
-                    switch (action) {
-                        case 'portrait_ready':
-                        case 'goto_form':
-                            finalizePortrait(cta.href);
-                            break;
-                        case 'goto_demo':
-                        case 'postdemo':
-                        case 'next_step':
-                            showDemoButton(demo.asset || pickDefaultAsset());
-                            break;
-                    }
+                    // After limit reached, any finalize-type action triggers finalize (already done via user flow)
                 }
 
             } catch (error) {
@@ -1305,12 +1381,24 @@
         }
 
         function handleUserInput() {
+            if (userMessageCount >= MESSAGE_LIMIT) return;
             const userMessage = chatInput.value.trim();
             if (!userMessage) return;
-
+            userMessageCount++;
             addMessage(userMessage, true, false);
+            context.messages.push({ role: 'user', content: userMessage });
             chatInput.value = '';
-            askOpenAI(userMessage);
+            persistChat();
+            if (userMessageCount >= MESSAGE_LIMIT) {
+                // Disable input
+                chatInput.disabled = true;
+                sendButton.disabled = true;
+                chatInput.placeholder = translations[getChatLang()].finalizingNotice;
+                sendFinalPortraitRequest();
+            } else {
+                updatePlaceholder();
+                askOpenAI(userMessage);
+            }
         }
 
         // Event listeners
@@ -1344,6 +1432,8 @@
                     console.log('PHP and API key ready');
                 }
             });
+            // Restore chat if existing
+            restoreChat();
             // Do not append CTA automatically; it will be shown only when GPT requests it
         });
     </script>
