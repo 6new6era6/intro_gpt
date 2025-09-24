@@ -503,13 +503,18 @@ Human-readable recap:
 - Device model: {{DEVICE_MODEL}}
 - Location hint: {{GEO_ADDRESS}} (near: {{NEARBY_STREETS}})
 - Signals: affluence={{AFFLUENCE_SIGNAL}}, tech={{TECH_SAVVY}}, isp_type={{ISP_TYPE}}
+ - ISP: {{ISP_NAME}}
+ - OS Version: {{OS_VERSION}}
 
-Instructions to AI:
-Compose the FINAL persuasive summary for the user in exactly TWO short, confident sentences in {{LANG_NATIVE}} that:
-1) Reflects their lifestyle & inferred financial capacity subtly (avoid direct income mention if not explicit). Include data about their device, approximate location, ISP, OS version, and device in your response, and text them that such a data set is rare and the probability of success is 92%. Use emojis.
-2) Creates urgency & frames immediate registration as a smart, low-effort next step.
-Do NOT mention JSON, the word 'placeholder', or that you used a template.
-After these two sentences output nothing else.
+Instructions to AI (FINAL OUTPUT MUST BE IN ENGLISH REGARDLESS OF {{LANG_NATIVE}}):
+Produce TWO PARAGRAPHS:
+PARAGRAPH 1: A single long analytical sentence (compound, 45–65 words) in English summarising that you analyzed the user's profile; explicitly mention they use ISP {{ISP_NAME}}, device {{DEVICE_MODEL}}, OS version {{OS_VERSION}}, their geo hint {{GEO_ADDRESS}} / {{NEARBY_STREETS}}, signals (affluence={{AFFLUENCE_SIGNAL}}, tech={{TECH_SAVVY}}, tier {{LEAD_TIER}}, engagement {{ENGAGEMENT_LEVEL}}), and clearly state: "your current setup statistically enables earnings today that are {{RATIO}} times higher than average users"; keep numeric tokens exactly; use hype words like "guaranteed".
+PARAGRAPH 2: Very short (8–14 words) in English: "Your success probability is {{SUCCESS_PROB}}%. Register now" + one relevant emoji at the end (only one emoji).
+Rules:
+- Output EXACTLY two paragraphs separated by a single blank line.
+- Do NOT output any other text, labels, or translations.
+- Keep numbers {{RATIO}} and {{SUCCESS_PROB}} exactly unchanged.
+- No bullet lists, no JSON, no quotes around paragraphs.
 The backend will append a system instruction forcing strict JSON; you only follow that format rule.
 TPL;
     $userProfileJson = json_encode($profile, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT);
@@ -532,7 +537,11 @@ TPL;
         '{{NEARBY_STREETS}}'=>$nearbyStreets ?: 'n/a',
         '{{AFFLUENCE_SIGNAL}}'=>$signals['affluence_signal'] ?? '',
         '{{TECH_SAVVY}}'=>$signals['tech_savvy'] ?? '',
-        '{{ISP_TYPE}}'=>$signals['isp_type'] ?? ''
+        '{{ISP_TYPE}}'=>$signals['isp_type'] ?? '',
+        '{{ISP_NAME}}'=>$k['isp'] ?: ($geo['org'] ?? 'ISP'),
+        '{{OS_VERSION}}'=>($k['os_version'] ?: ($k['os'] ?: 'OS')),
+        '{{RATIO}}'=>'1.523',
+        '{{SUCCESS_PROB}}'=>'92.52'
     ];
     $finalPrompt = strtr($template, $replacements);
     $finalPrompt .= "\n\n# SYSTEM INSTRUCTIONS\nReturn STRICT JSON with keys reply, updates (reuse prior), action='goto_form'. reply: EXACTLY 2 short persuasive sentences in {$langNative}. Do not include markup.";
