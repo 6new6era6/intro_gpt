@@ -320,22 +320,6 @@ if (!$lang) {
 
 // ===== System Prompt =====
 $nearby_str = implode(' / ', array_slice($signals['geo_granularity']['nearby_streets'] ?? [], 0, 3)) ?: 'n/a';
-// Language force directive to ensure assistant replies strictly in chosen language
-$langDirective = '';
-switch (strtolower($lang)) {
-    case 'ru': $langDirective = "All replies must be in Russian (ru)."; break;
-    case 'uk': $langDirective = "Усі відповіді повинні бути українською мовою (uk)."; break;
-    case 'en': $langDirective = "All replies must be in English (en)."; break;
-    case 'es': $langDirective = "Todas las respuestas deben estar en español (es)."; break;
-    case 'fr': $langDirective = "Toutes les réponses doivent être en français (fr)."; break;
-    case 'de': $langDirective = "Alle Antworten müssen auf Deutsch (de) sein."; break;
-    case 'pt': $langDirective = "Todas as respostas devem estar em português (pt)."; break;
-    case 'it': $langDirective = "Tutte le risposte devono essere in italiano (it)."; break;
-    case 'zh': $langDirective = "所有回答必须使用中文 (zh)。"; break;
-    case 'ja': $langDirective = "すべての回答は日本語 (ja) でなければなりません。"; break;
-    default: $langDirective = "All replies must be in the user selected language."; break;
-}
-
 $sysText =
 "You are an AI investment consultant assistant: persuasive, professional, and focused on guiding to a deposit today.\n".
 "Mission: use Keitaro + IP + maps context to build a full financial profile, keep conversation smooth, motivate action and naturally lead to deposit without asking directly.\n\n".
@@ -359,10 +343,7 @@ $sysText =
 
 "## Tone & Rules\n".
 "- Use user language for all prompts and replies.\n".
-"- {$langDirective}\n".
 "- Replies MUST be 1–2 simple, confident sentences, direct and action-oriented.\n".
-"- Never mention any button unless user typed the exact word START (case-insensitive).\n".
-"- If user has NOT yet typed START: end your reply naturally about opportunity; model will append instruction. Do NOT ask them to type start yourself.\n".
 "- Start naturally with locality if confidence ≥ 0.8 (mention address or nearby streets).\n".
 "- Mention device early (use exact model string if available).\n".
 "- **Never ask income directly.** Use soft lifestyle probes: free time, hobbies, travel frequency, eating out, shopping habits, subscriptions, car ownership, kids — then infer income bracket.\n".
@@ -388,7 +369,7 @@ $sysText =
 
 "## Response format (STRICT JSON)\n".
 "{\n".
-"  \"reply\": \"<1–2 sentences with locality/device/personal cues>\",\n".
+"  \"reply\": \"<1–2 sentences with locality/device cues>\",\n".
 "  \"updates\": {\n".
 "    \"answers\": {\"income_range\":\"\",\"job_title\":\"\",\"family_status\":\"\"},\n".
 "    \"readiness_score\": <0–100>,\n".
@@ -451,11 +432,10 @@ for ($i = 0; $i < count($messages); $i++) {
 }
 
 // базовий CTA (який ми покажемо ТІЛЬКИ якщо show_cta=true)
-$cta_payload = ["label" => "START", "href" => $cta_url, "visible" => false];
+$cta_payload = ["label" => "Перейти к регистрации", "href" => $cta_url, "visible" => false];
 
 // функція вирішуємо, чи показувати кнопку зараз
-// Hardcoded trigger: only exact word 'start' (case-insensitive, trimmed)
-$agreed = preg_match('/\bstart\b/i', $lastUser);
+$agreed = preg_match('/\b(давай|давайте|готов|поехали|перейд(у|ём|ем)|start|go)\b/ui', $lastUser);
 
 if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
     $action = strtolower($parsed['action']);
@@ -464,47 +444,13 @@ if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
         ? $parsed['updates']['answers']
         : ($parsed['updates']['answers'] ?? []));
     // умова показу CTA
-    // New strict logic: show CTA ONLY if user explicitly typed 'start'
-    $show_cta = $agreed === 1;
+    $show_cta = (
+        in_array($action, ['goto_form','goto_demo'], true) ||
+        $agreed ||
+        ($score >= 80 && $answersCount >= 2 && $user_turns >= 2)
+    );
 
     $cta_payload['visible'] = $show_cta;
-    if ($show_cta) {
-        // встановлюємо label лише тепер
-        if (empty($cta_payload['label'])) $cta_payload['label'] = 'START';
-    } else {
-        // sanitize
-        $cta_payload['href'] = '';
-        $cta_payload['label'] = '';
-    }
-
-    // If CTA not yet available, append instruction only after 5+ user turns and if not already shown
-    if (!$show_cta && is_array($parsed) && isset($parsed['reply']) && $user_turns >= 5) {
-        $alreadyInstructed = false;
-        for ($i = 0; $i < count($messages); $i++) {
-            if (($messages[$i]['role']??'')==='assistant') {
-                $cnt = $messages[$i]['content']??'';
-                if (preg_match('/(слово START|word START|Введите START|напишите слово START|Type the word START)/iu',$cnt)) { $alreadyInstructed = true; break; }
-            }
-        }
-        if (!$alreadyInstructed) {
-            $instruction = '';
-            switch (strtolower($lang)) {
-                case 'ru': $instruction = ' Напишите слово START чтобы получить первую прибыль.'; break;
-                case 'uk': $instruction = ' Напишіть слово START щоб отримати свій перший прибуток.'; break;
-                case 'en': $instruction = ' Type the word START to unlock the button and begin earning.'; break;
-                case 'es': $instruction = ' Escribe la palabra START para desbloquear el botón y comenzar a ganar.'; break;
-                case 'fr': $instruction = ' Tapez le mot START pour déverrouiller le bouton et commencer à générer un profit.'; break;
-                case 'de': $instruction = ' Tippe das Wort START um die Schaltfläche freizuschalten und deinen ersten Gewinn zu machen.'; break;
-                case 'pt': $instruction = ' Digite a palavra START para desbloquear o botão e começar a lucrar.'; break;
-                case 'it': $instruction = ' Digita la parola START per sbloccare il pulsante e iniziare a guadagnare.'; break;
-                case 'zh': $instruction = ' 输入 START 以解锁按钮并开始获利。'; break;
-                case 'ja': $instruction = ' START と入力してボタンを解除し、利益を得始めましょう。'; break;
-            }
-            if ($instruction && !preg_match('/START/',$parsed['reply'])) {
-                $parsed['reply'] = rtrim($parsed['reply']).$instruction;
-            }
-        }
-    }
     $parsed['cta'] = $cta_payload;
     $parsed['redirect'] = false; // НІКОЛИ не редиректимо з бекенда
     echo json_encode($parsed, JSON_UNESCAPED_UNICODE);

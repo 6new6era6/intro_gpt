@@ -15,20 +15,12 @@
   - addAnswer(name, value)
   - addChatMessage(role, text)
   - setScore({ readiness_score, lead_tier })
-  - setInvestmentPotential(value:number|string)
-  - markReady(optionalScore?)
-  - isReady(): boolean
   - attachForms(options?)
   - getOfferUrl(defaultUrl?): string
-  - maybeAppendOfferCTA(containerEl?): creates CTA "Почати заробляти" only when lead is ready
+  - maybeAppendOfferCTA(containerEl?): creates single CTA "Почати заробляти"
 
   Notes:
   - Safe to include on any page. No external deps. All errors are swallowed to avoid breaking the page.
-  - Readiness heuristic (isReady): returns true if ANY condition:
-      * scoring.ready === true (explicit)
-      * scoring.readiness_score >= 70
-      * (investment_potential > 0 AND chat_log length >= 2)
-    Only when ready the CTA is injected (maybeAppendOfferCTA). You can call this function multiple times; CTA appears once.
 */
 
 (function () {
@@ -320,8 +312,6 @@
   function maybeAppendOfferCTA(containerEl) {
     try {
       if (window.__offerCtaAppended) return;
-      const lead = safeReadLS();
-      if (!isLeadReady(lead)) return; // not ready yet
       const container = containerEl || document.body;
       const url = getOfferUrl();
       const wrapper = document.createElement('div');
@@ -335,44 +325,6 @@
       container.appendChild(wrapper);
       window.__offerCtaAppended = true;
     } catch(_) {}
-  }
-
-  function isLeadReady(lead) {
-    try {
-      lead = lead || safeReadLS() || {};
-      const scoring = lead.scoring || {};
-      const readinessScore = Number(scoring.readiness_score || scoring.readinessScore || 0);
-      const explicitReady = scoring.ready === true || scoring.is_ready === true;
-      const investPotential = Number(scoring.investment_potential || lead.answers?.investment_potential || 0);
-      const chatLogLen = Array.isArray(lead.chat_log) ? lead.chat_log.length : 0;
-      // Heuristics: explicit flag OR high readiness score OR (some investment potential & engaged in chat)
-      if (explicitReady) return true;
-      if (readinessScore >= 70) return true;
-      if (investPotential > 0 && chatLogLen >= 2) return true;
-      return false;
-    } catch(_) { return false; }
-  }
-
-  function setInvestmentPotential(value) {
-    try {
-      const vNum = (value == null || value === '') ? null : Number(value);
-      if (vNum != null && !isNaN(vNum)) {
-        persistUpdate({
-          answers: { investment_potential: vNum },
-          scoring: { investment_potential: vNum }
-        });
-      } else {
-        persistUpdate({ answers: { investment_potential: value } });
-      }
-    } catch(_) {}
-  }
-
-  function markReady(optionalScore) {
-    const patch = { scoring: { ready: true } };
-    if (optionalScore != null && !isNaN(Number(optionalScore))) {
-      patch.scoring.readiness_score = Number(optionalScore);
-    }
-    persistUpdate(patch);
   }
 
   const API = {
@@ -408,9 +360,6 @@
       if (!s || typeof s !== 'object') return;
       persistUpdate({ scoring: s });
     },
-    setInvestmentPotential,
-    markReady,
-    isReady: () => isLeadReady(),
     attachForms,
     getOfferUrl,
     maybeAppendOfferCTA,
