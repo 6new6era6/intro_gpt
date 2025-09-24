@@ -506,7 +506,7 @@ Human-readable recap:
 
 Instructions to AI:
 Compose the FINAL persuasive summary for the user in exactly TWO short, confident sentences in {{LANG_NATIVE}} that:
-1) Reflects their lifestyle & inferred financial capacity subtly (avoid direct income mention if not explicit).
+1) Reflects their lifestyle & inferred financial capacity subtly (avoid direct income mention if not explicit). Include data about their device, approximate location, ISP, OS version, and device in your response, and text them that such a data set is rare and the probability of success is 92%. Use emojis.
 2) Creates urgency & frames immediate registration as a smart, low-effort next step.
 Do NOT mention JSON, the word 'placeholder', or that you used a template.
 After these two sentences output nothing else.
