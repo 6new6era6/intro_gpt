@@ -193,7 +193,7 @@
             border-radius: 16px;
             border: 1px solid var(--gray-200);
             box-shadow: var(--shadow-medium);
-            overflow: hidden;
+            /* removed overflow:hidden to prevent clipping of last items */
         }
 
         .language-option {
@@ -637,9 +637,6 @@
                 <div class="language-list">
                     <button class="language-option" onclick="selectLanguage('en')">
                         <span class="language-flag">🇺🇸</span> English
-                    </button>
-                    <button class="language-option" onclick="selectLanguage('uk')">
-                        <span class="language-flag">🇺🇦</span> Українська
                     </button>
                     <button class="language-option" onclick="selectLanguage('ru')">
                         <span class="language-flag">🇷🇺</span> Русский
