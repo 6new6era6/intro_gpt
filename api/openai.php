@@ -468,28 +468,41 @@ if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
     $show_cta = $agreed === 1;
 
     $cta_payload['visible'] = $show_cta;
-    if (!$show_cta) { // sanitize so старий фронт не показує
+    if ($show_cta) {
+        // встановлюємо label лише тепер
+        if (empty($cta_payload['label'])) $cta_payload['label'] = 'START';
+    } else {
+        // sanitize
         $cta_payload['href'] = '';
         $cta_payload['label'] = '';
     }
 
-    // If CTA not yet available, append instruction (language-aware) to reply once
-    if (!$show_cta && is_array($parsed) && isset($parsed['reply'])) {
-        $instruction = '';
-        switch (strtolower($lang)) {
-            case 'ru': $instruction = ' Напишите слово START чтобы получить первую прибыль.'; break;
-            case 'uk': $instruction = ' Напишіть слово START щоб отримати свій перший прибуток.'; break;
-            case 'en': $instruction = ' Type the word START to begin earning your first profit.'; break;
-            case 'es': $instruction = ' Escribe la palabra START para comenzar a ganar tu primera ganancia.'; break;
-            case 'fr': $instruction = ' Tapez le mot START pour commencer à générer votre premier profit.'; break;
-            case 'de': $instruction = ' Tippe das Wort START um deinen ersten Gewinn zu erhalten.'; break;
-            case 'pt': $instruction = ' Digite a palavra START para começar a obter seu primeiro lucro.'; break;
-            case 'it': $instruction = ' Digita la parola START per iniziare a ottenere il tuo primo profitto.'; break;
-            case 'zh': $instruction = ' 输入 START 开始获取您的第一笔收益。'; break;
-            case 'ja': $instruction = ' START と入力して最初の利益を得ましょう。'; break;
+    // If CTA not yet available, append instruction only after 5+ user turns and if not already shown
+    if (!$show_cta && is_array($parsed) && isset($parsed['reply']) && $user_turns >= 5) {
+        $alreadyInstructed = false;
+        for ($i = 0; $i < count($messages); $i++) {
+            if (($messages[$i]['role']??'')==='assistant') {
+                $cnt = $messages[$i]['content']??'';
+                if (preg_match('/(слово START|word START|Введите START|напишите слово START|Type the word START)/iu',$cnt)) { $alreadyInstructed = true; break; }
+            }
         }
-        if ($instruction && strpos($parsed['reply'], 'START') === false) {
-            $parsed['reply'] = rtrim($parsed['reply']).$instruction;
+        if (!$alreadyInstructed) {
+            $instruction = '';
+            switch (strtolower($lang)) {
+                case 'ru': $instruction = ' Напишите слово START чтобы получить первую прибыль.'; break;
+                case 'uk': $instruction = ' Напишіть слово START щоб отримати свій перший прибуток.'; break;
+                case 'en': $instruction = ' Type the word START to unlock the button and begin earning.'; break;
+                case 'es': $instruction = ' Escribe la palabra START para desbloquear el botón y comenzar a ganar.'; break;
+                case 'fr': $instruction = ' Tapez le mot START pour déverrouiller le bouton et commencer à générer un profit.'; break;
+                case 'de': $instruction = ' Tippe das Wort START um die Schaltfläche freizuschalten und deinen ersten Gewinn zu machen.'; break;
+                case 'pt': $instruction = ' Digite a palavra START para desbloquear o botão e começar a lucrar.'; break;
+                case 'it': $instruction = ' Digita la parola START per sbloccare il pulsante e iniziare a guadagnare.'; break;
+                case 'zh': $instruction = ' 输入 START 以解锁按钮并开始获利。'; break;
+                case 'ja': $instruction = ' START と入力してボタンを解除し、利益を得始めましょう。'; break;
+            }
+            if ($instruction && !preg_match('/START/',$parsed['reply'])) {
+                $parsed['reply'] = rtrim($parsed['reply']).$instruction;
+            }
         }
     }
     $parsed['cta'] = $cta_payload;
