@@ -342,7 +342,7 @@ $sysText =
 "- Detected device (exact string if possible): {$detectedPhone}\n\n".
 
 "## Tone & Rules\n".
-"- Use only 1 language for all prompts and replies. Use this language: ".($lang ?: 'uk').".\n".
+"- Use user language for all prompts and replies.\n".
 "- Replies MUST be 1–2 simple, confident sentences, direct and action-oriented.\n".
 "- Start naturally with locality if confidence ≥ 0.8 (mention address or nearby streets).\n".
 "- Mention device early (use exact model string if available).\n".
@@ -352,29 +352,29 @@ $sysText =
 "- Use social proof subtly: \"many locals already benefit from...\", \"this area has good potential for...\"\n\n".
 
 "## Engagement Flow\n".
-"1) Local relevance (detected address / nearby streets) + concise opportunity.\n".
-"2) **Client portrait (soft):** ask casually about lifestyle: \"як любите проводити вихідні?\", \"подорожі чи більше домашній відпочинок?\", \"кафе/ресторани чи домашня кухня?\", \"часто оновлюєте гаджети/одяг?\" — коротко, по одному запитанню за раз.\n".
-"3) На основі відповідей **інферуйте** updates.answers.income_range (one of: \"<800\", \"800–1500\", \"1500–3000\", \"3000–6000\", \"6000+\"), job_title (free text), family_status (\"single|married|kids\").\n".
-"4) Уточніть досвід інвестицій, горизонт, цілі, валюту — теж м'яко.\n".
-"5) Поясніть вигоду маленького старту сьогодні (locking current conditions) і **запропонуйте наступний крок**. Ніколи не редиректіть: лише дайте **CTA кнопку**.\n\n".
+"1) Greeting + concise opportunity. Example: \"Hello, {UserName}! Today is a great moment to start your earning journey. Someone from the (mention address or nearby streets) has already made their first profit today.\" \n".
+"2) **Client portrait (soft):** ask casually about lifestyle: \"How do you like to spend your free time?\", \"Would you like to travel more, or do you already travel often?\", \"What about having a home chef? Do you enjoy going out to restaurants?\", \"Would you like to dress stylishly every day, or are shopping trips indifferent to you?\" — keep it short, one question at a time.\n".
+"3) Based on the answers, **infer** updates.answers.income_range (one of: \"<\$800\", \"\$800–\$1500\", \"\$1500–\$3000\", \"\$3000–\$6000\", \"\$6000+\"), job_title (free-form; e.g., \"What do you do for work? Is the pay enough to afford the above every day?\"), family_status (\"single|married|kids\"). \"Your wife would probably love living in a luxurious mansion, right?\" \n".
+"4) Gently clarify investment experience, dreams, and goals.\n".
+"5) \"Using nothing but your (DEVICE), you can already afford this starting today\" — then **offer the next step**. Never redirect: just provide a **CTA button**.\n\n".
 
 "## Income inference hints (examples)\n".
-"- Часті подорожі за кордон + ресторани кілька разів на тиждень + нові гаджети щороку → 3000–6000 або 6000+\n".
-"- Подорожі раз на рік, кафе 1–2/міс, оновлення техніки раз на 2–3 роки → 1500–3000\n".
-"- Без подорожей, кафе рідко, економія, покупки в знижкових мережах → 800–1500 або <800\n".
-"- Двоє дітей + авто у кредит + стабільна робота у сфері X → 1500–3000 (уточнювати)\n\n".
+"- Frequent trips abroad + restaurants several times a week + new gadgets every year → \$3000–\$6000 or \$6000+\n".
+"- Travel once a year, cafes 1–2 times/month, upgrade tech every 2–3 years → \$1500–\$3000\n".
+"- No travel, rare cafe visits, frugal, shops at discount chains → \$800–\$1500 or <\$800\n".
+"- Two kids + car on credit + stable job in field X → \$1500–\$3000 (verify)\n\n".
 
 "## REQUIRED profile fields in updates.answers\n".
 "- income_range, job_title, family_status\n\n".
 
 "## Response format (STRICT JSON)\n".
 "{\n".
-"  \"reply\": \"<1–2 sentences with locality/device cues>\",\n".
+"  \"reply\": \"<1–2 sentences with locality/device/personal cues>\",\n".
 "  \"updates\": {\n".
 "    \"answers\": {\"income_range\":\"\",\"job_title\":\"\",\"family_status\":\"\"},\n".
-"    \"readiness_score\": <60–100>,\n".
-"    \"lead_tier\": \"A|B|C\",\n".
-"    \"engagement_level\": \"medium|high\",\n".
+"    \"readiness_score\": <0–100>,\n".
+"    \"lead_tier\": \"T1|T2|T3\",\n".
+"    \"engagement_level\": \"low|medium|high\",\n".
 "    \"segment\": \"crypto|forex|stocks|mixed\"\n".
 "  },\n".
 "  \"action\": \"ask|next_step|goto_demo|goto_form\"\n".
@@ -409,26 +409,57 @@ if ($http < 200 || $http >= 300) { http_response_code($http ?: 500); echo json_e
 
 $data = json_decode($response, true);
 $content = $data['choices'][0]['message']['content'] ?? "";
+// ===== Parse + CTA gating (no auto-redirect) =====
+function answers_filled_count($answers) {
+    if (!is_array($answers)) return 0;
+    $c = 0;
+    foreach (['income_range','job_title','family_status'] as $k) {
+        if (!empty($answers[$k]) && is_string($answers[$k])) $c++;
+    }
+    return $c;
+}
 
-// ===== Parse + UI (no forced redirect) =====
 $parsed = json_decode($content, true);
-$lastUser = '';
-for ($i=count($messages)-1;$i>=0;$i--) { if (($messages[$i]['role']??'')==='user') { $lastUser=$messages[$i]['content']??''; break; } }
 
-// CTA: віддаємо завжди, фронт показує кнопку <a>, НІЯКИХ редиректів із бекенда
-$cta = ["label"=>"Перейти к регистрации","href"=>$cta_url]; 
+// лічильник юзер-ходів у цьому діалозі
+$user_turns = 0;
+$lastUser = '';
+for ($i = 0; $i < count($messages); $i++) {
+    if (($messages[$i]['role'] ?? '') === 'user') {
+        $user_turns++;
+        $lastUser = $messages[$i]['content'] ?? $lastUser;
+    }
+}
+
+// базовий CTA (який ми покажемо ТІЛЬКИ якщо show_cta=true)
+$cta_payload = ["label" => "START", "href" => $cta_url, "visible" => false];
+
+// функція вирішуємо, чи показувати кнопку зараз
+$agreed = preg_match('/\b(давай|давайте|готов|поехали|перейд(у|ём|ем)|start|go)\b/ui', $lastUser);
 
 if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
-    // не чіпаємо action, просто додаємо CTA і явний прапорець без редиректу
-    $parsed['cta'] = $cta;
-    $parsed['redirect'] = false;
+    $action = strtolower($parsed['action']);
+    $score = (int)($parsed['updates']['readiness_score'] ?? 0);
+    $answersCount = answers_filled_count($parsed['updates']['answers']['income_range'] ?? null
+        ? $parsed['updates']['answers']
+        : ($parsed['updates']['answers'] ?? []));
+    // умова показу CTA
+    $show_cta = (
+        in_array($action, ['goto_form','goto_demo'], true) ||
+        $agreed ||
+        ($score >= 80 && $answersCount >= 2 && $user_turns >= 2)
+    );
+
+    $cta_payload['visible'] = $show_cta;
+    $parsed['cta'] = $cta_payload;
+    $parsed['redirect'] = false; // НІКОЛИ не редиректимо з бекенда
     echo json_encode($parsed, JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode([
         "reply" => trim($content) ?: "Дякую! Продовжимо.",
         "action" => "ask",
         "updates" => new stdClass(),
-        "cta" => $cta,
+        "cta" => $cta_payload, // visible=false на першому кроці
         "redirect" => false
     ], JSON_UNESCAPED_UNICODE);
 }
