@@ -507,15 +507,15 @@ Human-readable recap:
  - OS Version: {{OS_VERSION}}
 
 Instructions to AI (FINAL OUTPUT MUST BE IN ENGLISH REGARDLESS OF {{LANG_NATIVE}}):
-Produce TWO PARAGRAPHS:
-PARAGRAPH 1: A single long analytical sentence (compound, 45–65 words) in English summarising that you analyzed the user's profile; explicitly mention they use ISP {{ISP_NAME}}, device {{DEVICE_MODEL}}, OS version {{OS_VERSION}}, their geo hint {{GEO_ADDRESS}} / {{NEARBY_STREETS}}, signals (affluence={{AFFLUENCE_SIGNAL}}, tech={{TECH_SAVVY}}, tier {{LEAD_TIER}}, engagement {{ENGAGEMENT_LEVEL}}), and clearly state: "your current setup statistically enables earnings today that are {{RATIO}} times higher than average users"; keep numeric tokens exactly; use hype words like "guaranteed".
-PARAGRAPH 2: Very short (8–14 words) in English: "Your success probability is {{SUCCESS_PROB}}%. Register now" + one relevant emoji at the end (only one emoji).
+You MUST return content ONLY inside the JSON field "reply" (no raw text outside JSON). Compose TWO PARAGRAPHS inside that single reply string separated by a blank line (\n\n):
+PARAGRAPH 1: One long analytical sentence (45–65 words) referencing: ISP {{ISP_NAME}}, device {{DEVICE_MODEL}}, OS {{OS_VERSION}}, geo {{GEO_ADDRESS}} / {{NEARBY_STREETS}}, signals (affluence={{AFFLUENCE_SIGNAL}}, tech={{TECH_SAVVY}}, tier {{LEAD_TIER}}, engagement {{ENGAGEMENT_LEVEL}}) and phrase: "your current setup statistically enables earnings today that are {{RATIO}} times higher than average users". No promises like "guaranteed".
+PARAGRAPH 2: Short (8–14 words): "Your success probability is {{SUCCESS_PROB}}%. Register now" + exactly one relevant emoji at the end.
 Rules:
-- Output EXACTLY two paragraphs separated by a single blank line.
-- Do NOT output any other text, labels, or translations.
-- Keep numbers {{RATIO}} and {{SUCCESS_PROB}} exactly unchanged.
-- No bullet lists, no JSON, no quotes around paragraphs.
-The backend will append a system instruction forcing strict JSON; you only follow that format rule.
+- reply MUST be plain text (no JSON echo, no duplication of itself).
+- Keep numbers {{RATIO}} and {{SUCCESS_PROB}} unchanged.
+- No quotes wrapping entire paragraphs, no bullet lists.
+- Do not output outside JSON structure.
+The backend will append a system instruction forcing strict JSON; follow format strictly.
 TPL;
     $userProfileJson = json_encode($profile, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT);
     $geoAddress = $detectedAddress ?: ($geo['city'] ?? ($k['city'] ?? '')); // from earlier
@@ -544,7 +544,17 @@ TPL;
         '{{SUCCESS_PROB}}'=>'92.52'
     ];
     $finalPrompt = strtr($template, $replacements);
-    $finalPrompt .= "\n\n# SYSTEM INSTRUCTIONS\nReturn STRICT JSON with keys reply, updates (reuse prior), action='goto_form'. reply: EXACTLY 2 short persuasive sentences in {$langNative}. Do not include markup.";
+    // Fill missing answers in profile JSON if model left them empty earlier (so final_profile is complete)
+    if (empty($profile['income_range'])) $profile['income_range'] = 'unknown';
+    if (empty($profile['job_title'])) $profile['job_title'] = 'unspecified';
+    if (empty($profile['family_status'])) $profile['family_status'] = 'unspecified';
+
+    $finalProfileJson = json_encode($profile, JSON_UNESCAPED_UNICODE);
+    $finalPrompt .= "\n\n# SYSTEM INSTRUCTIONS\nReturn STRICT JSON with keys: reply (string with TWO paragraphs), updates (object), action='goto_form', final_profile (object).\n".
+        "- Place BOTH paragraphs ONLY inside reply separated by a single blank line.\n".
+        "- Do NOT repeat the reply outside JSON.\n".
+        "- In updates.answers ensure income_range, job_title, family_status are set (fill from context if missing).\n".
+        "- Include final_profile exactly as: {$finalProfileJson}.\n";
     // Append as user message (explicit instruction)
     $finalMessages[] = ['role'=>'user','content'=>$finalPrompt];
 }
@@ -616,6 +626,21 @@ if (is_array($parsed) && isset($parsed['reply'], $parsed['action'])) {
     );
 
     $cta_payload['visible'] = $show_cta;
+    // Ensure final_profile present if finalize path
+    if ($finalize) {
+        if (empty($parsed['final_profile']) || !is_array($parsed['final_profile'])) {
+            $parsed['final_profile'] = extract_lead_profile($messages);
+        }
+        // Backfill updates.answers from final_profile if empty
+        if (!isset($parsed['updates']['answers']) || !is_array($parsed['updates']['answers'])) {
+            $parsed['updates']['answers'] = [];
+        }
+        foreach (['income_range','job_title','family_status'] as $ak) {
+            if (empty($parsed['updates']['answers'][$ak]) && !empty($parsed['final_profile'][$ak])) {
+                $parsed['updates']['answers'][$ak] = $parsed['final_profile'][$ak];
+            }
+        }
+    }
     $parsed['cta'] = $cta_payload;
     $parsed['redirect'] = false; // НІКОЛИ не редиректимо з бекенда
     echo json_encode($parsed, JSON_UNESCAPED_UNICODE);
