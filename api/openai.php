@@ -478,8 +478,40 @@ function extract_lead_profile($messages) {
 $finalMessages = $messages; // will append template-based user instruction if finalize
 if ($finalize) {
     $profile = extract_lead_profile($messages);
-    $templatePath = __DIR__ . '/final_prompt.txt';
-    $template = file_exists($templatePath) ? file_get_contents($templatePath) : "# FINAL PROFILE\nLanguage: {{LANG}} ({{LANG_NATIVE}})\nCollected profile JSON:\n{{USER_PROFILE_JSON}}\nInstructions: craft final JSON reply as specified earlier with persuasive 2 short sentences and action=goto_form.";
+    // Inline editable FINAL PROMPT TEMPLATE (edit below as needed)
+    $template = <<<'TPL'
+# FINAL PROFILE SUMMARY TEMPLATE
+# (Редагуй цей блок прямо у файлі openai.php — плейсхолдери будуть замінені автоматично)
+# Доступні плейсхолдери:
+# {{LANG}}, {{LANG_NATIVE}}, {{USER_PROFILE_JSON}}
+# {{INCOME_RANGE}}, {{JOB_TITLE}}, {{FAMILY_STATUS}}
+# {{READINESS_SCORE}}, {{LEAD_TIER}}, {{ENGAGEMENT_LEVEL}}, {{SEGMENT}}
+# {{DEVICE_MODEL}}, {{GEO_ADDRESS}}, {{NEARBY_STREETS}}
+# {{AFFLUENCE_SIGNAL}}, {{TECH_SAVVY}}, {{ISP_TYPE}}
+
+Language: {{LANG}} ({{LANG_NATIVE}})
+
+Collected user investment readiness & lifestyle profile (JSON):
+{{USER_PROFILE_JSON}}
+
+Human-readable recap:
+- Income range: {{INCOME_RANGE}}
+- Job title / role: {{JOB_TITLE}}
+- Family status: {{FAMILY_STATUS}}
+- Segment focus: {{SEGMENT}}
+- Engagement: {{ENGAGEMENT_LEVEL}} (tier {{LEAD_TIER}}, readiness {{READINESS_SCORE}})
+- Device model: {{DEVICE_MODEL}}
+- Location hint: {{GEO_ADDRESS}} (near: {{NEARBY_STREETS}})
+- Signals: affluence={{AFFLUENCE_SIGNAL}}, tech={{TECH_SAVVY}}, isp_type={{ISP_TYPE}}
+
+Instructions to AI:
+Compose the FINAL persuasive summary for the user in exactly TWO short, confident sentences in {{LANG_NATIVE}} that:
+1) Reflects their lifestyle & inferred financial capacity subtly (avoid direct income mention if not explicit).
+2) Creates urgency & frames immediate registration as a smart, low-effort next step.
+Do NOT mention JSON, the word 'placeholder', or that you used a template.
+After these two sentences output nothing else.
+The backend will append a system instruction forcing strict JSON; you only follow that format rule.
+TPL;
     $userProfileJson = json_encode($profile, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT);
     $geoAddress = $detectedAddress ?: ($geo['city'] ?? ($k['city'] ?? '')); // from earlier
     $nearbyStreets = implode(', ', array_slice($signals['geo_granularity']['nearby_streets'] ?? [],0,3));
