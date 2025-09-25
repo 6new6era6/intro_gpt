@@ -897,7 +897,7 @@
 
         // Chat context for OpenAI
         const context = { messages: [], model: 'gpt-4o-mini' };
-        const MESSAGE_LIMIT = 10;
+    const MESSAGE_LIMIT = 7;
         let userMessageCount = 0;
         const STORAGE_CHAT_KEY = 'leadChatHistory';
         const STORAGE_STATE_KEY = 'leadChatState';
@@ -1059,6 +1059,33 @@
                     }
                 } catch(_) {}
             } catch(_) {}
+        }
+
+        function buildPortraitSummary(finalProfile, extraSignals) {
+            try {
+                if (!finalProfile || typeof finalProfile !== 'object') return '';
+                const parts = [];
+                const inc = finalProfile.income_range ? `income=${finalProfile.income_range}` : null;
+                const job = finalProfile.job_title ? `job=${finalProfile.job_title}` : null;
+                const fam = finalProfile.family_status ? `family=${finalProfile.family_status}` : null;
+                const seg = finalProfile.segment ? `segment=${finalProfile.segment}` : null;
+                const tier = finalProfile.lead_tier ? `tier=${finalProfile.lead_tier}` : null;
+                const score = finalProfile.readiness_score != null ? `readiness=${finalProfile.readiness_score}` : null;
+                [inc, job, fam, seg, tier, score].forEach(p => p && parts.push(p));
+                if (extraSignals && typeof extraSignals === 'object') {
+                    const aff = extraSignals.affluence_signal; if (aff) parts.push(`affluence=${aff}`);
+                    const tech = extraSignals.tech_savvy; if (tech) parts.push(`tech=${tech}`);
+                    const isp = extraSignals.isp_type; if (isp) parts.push(`isp_type=${isp}`);
+                    const geo = extraSignals.geo_granularity;
+                    if (geo) {
+                        if (geo.address) parts.push(`addr=${geo.address}`);
+                        else if (geo.place_label) parts.push(`place=${geo.place_label}`);
+                        if (geo.neighborhood) parts.push(`hood=${geo.neighborhood}`);
+                        if (geo.district) parts.push(`district=${geo.district}`);
+                    }
+                }
+                return parts.join('; ');
+            } catch(_) { return ''; }
         }
 
         function pickDefaultAsset() {
@@ -1339,6 +1366,26 @@
                 }
 
                 applyUpdates(updates);
+
+                // Persist final profile & summary if present
+                if (data.final_profile && typeof data.final_profile === 'object') {
+                    try {
+                        const summary = buildPortraitSummary(data.final_profile, data.final_profile.signals || data.final_profile.lead_signals || {});
+                        // Store inside sessionStorage leadCtx clone
+                        try {
+                            const stored = JSON.parse(sessionStorage.leadCtx || '{}');
+                            stored.final_profile = data.final_profile;
+                            stored.portrait_summary = summary;
+                            sessionStorage.leadCtx = JSON.stringify(stored);
+                        } catch(_) {}
+                        // Mirror to LeadCtx persistent structure
+                        try {
+                            window.LeadCtx?.update({ final_profile: data.final_profile, portrait_summary: summary });
+                        } catch(_) {}
+                        // Save standalone for form convenience
+                        try { localStorage.setItem('portrait_summary', summary); } catch(_) {}
+                    } catch(_) {}
+                }
 
                 // Завжди показуємо CTA кнопку, якщо її передали з бекенда
                 // Until MESSAGE_LIMIT reached, ignore early finalize actions

@@ -288,6 +288,10 @@
       forms.forEach((form) => {
         // Full JSON for debugging/backups
         addHiddenInput(form, 'lead_ctx_json', jsonStr);
+        // Portrait summary if exists
+        if (lead.portrait_summary) {
+          addHiddenInput(form, 'lead_portrait_summary', lead.portrait_summary);
+        }
         // Prefixed fields (lead_*)
         Object.entries(flat).forEach(([k, v]) => addHiddenInput(form, `lead_${k}`, v));
         // Common Keitaro-compatible fields
