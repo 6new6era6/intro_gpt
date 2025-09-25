@@ -113,6 +113,20 @@ $protocolLander = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $
 $domainLander = $_SERVER['HTTP_HOST'];
 $pathLander = dirname($_SERVER['REQUEST_URI']);
 
+// Merge portrait summary + addendum into subId_f instead of using comment field
+if ($leadPortraitSummary !== '' || $portraitAddendum !== '') {
+    $portraitPayload = trim(($leadPortraitSummary ?: '') . ($portraitAddendum ? ' | ' . $portraitAddendum : ''));
+    $base = $subs['subId_f'] ?? '';
+    $combined = trim($base . ' ' . $portraitPayload);
+    // Typical affiliate subId length limits ~255 chars; keep safe margin
+    if (mb_strlen($combined) > 250) {
+        $combined = mb_substr($combined, 0, 250);
+    }
+    $subs['subId_f'] = $combined;
+    log_message('Lead portrait merged into subId_f (len=' . strlen($combined) . ')');
+}
+
+// Re-build originalData after subId_f enrichment
 $originalData = array(
     'affc' => $config['affc'] ?? null,
     'bxc' => $config['bxc'] ?? null,
@@ -121,7 +135,7 @@ $originalData = array(
         'firstName' => $firstName,
         'lastName' => $lastName,
         'email' => $email,
-        'password' => "aA1E23135167&", // Assuming a default password, replace if needed
+        'password' => "aA1E23135167&",
         'phone' => $phoneWithCode
     ),
     'ip' => $locationInfo['ip'],
@@ -141,28 +155,10 @@ $originalData = array(
     'utmMedium' => $utms['utmMedium'],
     'utmCampaign' => $utms['utmCampaign'],
     'utmId' => $utms['utmId'],
-    // Safest place to embed AI portrait summary without breaking expected payload shape.
-    'comment' => ($leadPortraitSummary !== '' ? $leadPortraitSummary : null)
+    // No 'comment' usage; partner expects enrichment via subId_f
+    'comment' => null
 );
 
-// If we have an addendum we can append (keeping total comment reasonable)
-if ($portraitAddendum && isset($originalData['comment'])) {
-    $remaining = 1000 - strlen($originalData['comment']);
-    if ($remaining > 10) {
-        $append = ' | ' . $portraitAddendum;
-        if (strlen($append) > $remaining) {
-            $append = substr($append, 0, $remaining);
-        }
-        $originalData['comment'] .= $append;
-    }
-} elseif ($portraitAddendum && !isset($originalData['comment'])) {
-    $originalData['comment'] = $portraitAddendum;
-}
-
-// Log enrichment presence (not full data to avoid logs bloat)
-if ($leadPortraitSummary !== '') {
-    log_message('Lead portrait summary attached (len=' . strlen($leadPortraitSummary) . ')');
-}
 if ($finalProfile) {
     log_message('Final profile keys: ' . implode(',', array_keys($finalProfile)));
 }
